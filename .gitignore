@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+*.log
 
 # Test binary, built with `go test -c`
 *.test
@@ -28,3 +29,4 @@ vendor/
 .DS_Store
 
 *.prof
+

@@ -1,0 +1,4 @@
+linters-settings:
+  custom:
+    statictest:
+      path: ./plugin/statictest.so
