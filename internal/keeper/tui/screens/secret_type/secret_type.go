@@ -3,6 +3,7 @@ package secrettype
 import (
 	"gophkeeper/internal/keeper/storage"
 	"gophkeeper/internal/keeper/tui"
+	"gophkeeper/internal/keeper/tui/styles"
 	"gophkeeper/pkg/models"
 	"maps"
 	"slices"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 const (
@@ -30,8 +30,6 @@ type SecretTypeScreen struct {
 
 	list   list.Model
 	choice string
-
-	style lipgloss.Style
 }
 
 func (s SecretTypeScreen) Make(msg tui.NavigationMsg, width, height int) (tui.Teable, error) {
@@ -39,11 +37,7 @@ func (s SecretTypeScreen) Make(msg tui.NavigationMsg, width, height int) (tui.Te
 }
 
 func NewSecretTypeScreen(strg storage.Storage) *SecretTypeScreen {
-	m := &SecretTypeScreen{
-		storage: strg,
-		style:   lipgloss.NewStyle(),
-	}
-
+	m := &SecretTypeScreen{storage: strg}
 	m.prepareSecretListModel()
 
 	return m
@@ -158,7 +152,7 @@ func (s *SecretTypeScreen) View() string {
 	var b strings.Builder
 
 	b.WriteString("Select type of secret:\n\n")
-	b.WriteString(s.style.Render(s.list.View()))
+	b.WriteString(styles.Regular.Render(s.list.View()))
 
 	return b.String()
 }

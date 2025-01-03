@@ -13,19 +13,11 @@ import (
 	storageOpen "gophkeeper/internal/keeper/tui/screens/storage_open"
 	textEdit "gophkeeper/internal/keeper/tui/screens/text_edit"
 	"gophkeeper/internal/keeper/tui/screens/welcome"
-
-	tea "github.com/charmbracelet/bubbletea"
 )
 
-// updateableMaker is a dynamically configurable maker.
-type updateableMaker interface {
-	Update(tea.Msg) tea.Cmd
-}
-
-// makeMakers makes model makers for making models
-func makeMakers() map[tui.Screen]tui.ScreenMaker {
-
-	makers := map[tui.Screen]tui.ScreenMaker{
+// Screen constructors
+func prepareMakers() map[tui.Screen]tui.ScreenMaker {
+	return map[tui.Screen]tui.ScreenMaker{
 		tui.WelcomeScreen:        &welcome.WelcomeScreen{},
 		tui.MenuScreen:           &menu.MenuScreen{},
 		tui.StorageCreateScreen:  &storageCreate.StorageCreateScreen{},
@@ -38,6 +30,4 @@ func makeMakers() map[tui.Screen]tui.ScreenMaker {
 		tui.BlobEditScreen:       &blobEdit.BlobEditScreen{},
 		tui.FilePickScreen:       &blobEdit.FilePickScreen{},
 	}
-
-	return makers
 }

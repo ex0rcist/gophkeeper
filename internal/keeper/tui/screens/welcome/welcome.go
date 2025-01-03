@@ -2,36 +2,14 @@ package welcome
 
 import (
 	"gophkeeper/internal/keeper/tui"
+	"gophkeeper/internal/keeper/tui/styles"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-type WelcomeScreen struct {
-	style lipgloss.Style
-}
-
-func (w WelcomeScreen) Make(msg tui.NavigationMsg, width, height int) (tui.Teable, error) {
-	return NewWelcomeScreen(), nil
-}
-
-func NewWelcomeScreen() *WelcomeScreen {
-	return &WelcomeScreen{
-		style: lipgloss.NewStyle(),
-	}
-}
-
-func (m WelcomeScreen) Init() tea.Cmd {
-	return tea.SetWindowTitle("GophKeeper client")
-}
-
-func (m *WelcomeScreen) Update(msg tea.Msg) tea.Cmd {
-	return nil
-}
-
-func (m WelcomeScreen) View() string {
-
-	c := `
+const (
+	logo = `
    _____             _     _  __                         
   / ____|           | |   | |/ /                         
  | |  __  ___  _ __ | |__ | ' / ___  ___ _ __   ___ _ __ 
@@ -41,6 +19,41 @@ func (m WelcomeScreen) View() string {
               | |                       | |              
               |_|                       |_|              
 	`
+)
 
-	return m.style.Render(c)
+type WelcomeScreen struct {
+	width, height int
+}
+
+func (s WelcomeScreen) Make(_ tui.NavigationMsg, width, height int) (tui.Teable, error) {
+	return NewWelcomeScreen(width, height), nil
+}
+
+func NewWelcomeScreen(width, height int) *WelcomeScreen {
+	return &WelcomeScreen{
+		width:  width,
+		height: height,
+	}
+}
+
+func (s WelcomeScreen) Init() tea.Cmd {
+	return tea.SetWindowTitle("GophKeeper client")
+}
+
+func (s *WelcomeScreen) Update(msg tea.Msg) tea.Cmd {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		s.width = msg.Width
+		s.height = msg.Height
+	}
+
+	return nil
+}
+
+func (s WelcomeScreen) View() string {
+	return lipgloss.Place(
+		s.width, s.height,
+		lipgloss.Center, lipgloss.Center,
+		styles.Highlighted.Render(logo),
+	)
 }

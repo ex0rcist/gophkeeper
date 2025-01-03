@@ -2,7 +2,6 @@ package tui
 
 import (
 	"errors"
-	"gophkeeper/internal/keeper/tui/keys"
 	"gophkeeper/internal/keeper/tui/styles"
 	"slices"
 
@@ -79,7 +78,7 @@ func (p *PaneManager) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, keys.Global.Tab):
+		case key.Matches(msg, GlobalKeys.Tab):
 			p.cycleFocusedPane()
 		default:
 			// Send remaining keys to focused pane
@@ -101,7 +100,7 @@ func (p *PaneManager) Update(msg tea.Msg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (pm *PaneManager) focusedModel() Teable {
+func (pm *PaneManager) FocusedModel() Teable {
 	return pm.panes[pm.focused].model
 }
 
@@ -216,15 +215,12 @@ func (m *PaneManager) renderPane(position Position) string {
 	}
 
 	// Width and Height does not include border size, so substract it
-	paneStyle := lipgloss.NewStyle().
+	paneStyle := styles.InactiveBorder.
 		Width(m.paneWidth(position) - borderSize).
-		Height(m.paneHeight(position) - borderSize).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.NoColor{})
+		Height(m.paneHeight(position) - borderSize)
 
-	// Change border color if pane is focused
 	if position == m.focused {
-		paneStyle = paneStyle.BorderForeground(styles.Purple)
+		paneStyle = styles.ActiveBorder.Inherit(paneStyle)
 	}
 
 	model := m.panes[position].model
@@ -233,7 +229,7 @@ func (m *PaneManager) renderPane(position Position) string {
 }
 
 func (pm *PaneManager) HelpBindings() (bindings []key.Binding) {
-	if model, ok := pm.focusedModel().(ModelHelpBindings); ok {
+	if model, ok := pm.FocusedModel().(ModelHelpBindings); ok {
 		bindings = append(bindings, model.HelpBindings()...)
 	}
 	return bindings

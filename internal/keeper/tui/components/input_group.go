@@ -3,6 +3,7 @@ package components
 
 import (
 	"fmt"
+	"gophkeeper/internal/keeper/tui/styles"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,11 +12,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 )
 
-var (
-	focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	blurredStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-	noStyle      = lipgloss.NewStyle()
-)
+var ()
 
 type InputGroup struct {
 	Inputs     []textinput.Model
@@ -35,8 +32,8 @@ func NewInputGroup(inputs []textinput.Model, buttons []Button) InputGroup {
 	for i, input := range inputs {
 		if i == 0 {
 			input.Focus()
-			input.PromptStyle = focusedStyle
-			input.TextStyle = focusedStyle
+			input.PromptStyle = styles.Focused
+			input.TextStyle = styles.Focused
 		}
 
 		inputs[i] = input
@@ -89,15 +86,15 @@ func (m InputGroup) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if i == m.FocusIndex {
 					// Set focused state
 					cmds = append(cmds, m.Inputs[i].Focus())
-					m.Inputs[i].PromptStyle = focusedStyle
-					m.Inputs[i].TextStyle = focusedStyle
+					m.Inputs[i].PromptStyle = styles.Focused
+					m.Inputs[i].TextStyle = styles.Focused
 					continue
 				}
 
 				// Remove focused state
 				m.Inputs[i].Blur()
-				m.Inputs[i].PromptStyle = noStyle
-				m.Inputs[i].TextStyle = noStyle
+				m.Inputs[i].PromptStyle = styles.Regular
+				m.Inputs[i].TextStyle = styles.Regular
 			}
 
 		}
@@ -123,7 +120,7 @@ func (m *InputGroup) updateInputs(msg tea.Msg) tea.Cmd {
 func (m InputGroup) View() string {
 	var (
 		b     strings.Builder
-		style lipgloss.Style = blurredStyle
+		style lipgloss.Style = styles.Blurred
 	)
 
 	for i, input := range m.Inputs {
@@ -139,9 +136,9 @@ func (m InputGroup) View() string {
 		title := but.Title
 
 		if m.FocusIndex == len(m.Inputs)+i {
-			style = focusedStyle
+			style = styles.Focused
 		} else {
-			style = blurredStyle
+			style = styles.Blurred
 		}
 
 		if i < m.totalPos-1 {

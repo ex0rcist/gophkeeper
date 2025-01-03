@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gophkeeper/internal/keeper/storage"
 	"gophkeeper/internal/keeper/tui"
+	"gophkeeper/internal/keeper/tui/styles"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,7 +17,6 @@ import (
 type StorageOpenScreen struct {
 	filePicker filepicker.Model
 	selected   string
-	style      lipgloss.Style
 }
 
 func (s StorageOpenScreen) Make(msg tui.NavigationMsg, width, height int) (tui.Teable, error) {
@@ -32,10 +32,7 @@ func NewStorageOpenScreen() *StorageOpenScreen {
 	fp := filepicker.New()
 	fp.CurrentDirectory = filepath.Join(defaultPath)
 
-	return &StorageOpenScreen{
-		filePicker: fp,
-		style:      lipgloss.NewStyle(),
-	}
+	return &StorageOpenScreen{filePicker: fp}
 }
 
 func (s StorageOpenScreen) Init() tea.Cmd {
@@ -75,7 +72,7 @@ func (s *StorageOpenScreen) Update(msg tea.Msg) tea.Cmd {
 func (s StorageOpenScreen) View() string {
 	var b strings.Builder
 
-	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FF79C6"))
+	titleStyle := styles.Bold.Foreground(lipgloss.Color("#FF79C6"))
 
 	b.WriteString(titleStyle.Render("Select storage file to open. Use ←, ↑, →, ↓ to navigate"))
 	b.WriteString("\n\n")

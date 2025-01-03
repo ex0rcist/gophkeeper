@@ -2,6 +2,7 @@
 package models
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -63,6 +64,26 @@ type Card struct {
 	ExpYear  uint32 `json:"exp_year"`
 	ExpMonth uint32 `json:"exp_month"`
 	CVV      uint32 `json:"cvv"`
+}
+
+func (s Secret) ToClipboard() string {
+	var b bytes.Buffer
+
+	switch SecretType(s.SecretType) {
+	case CredSecret:
+		b.WriteString(fmt.Sprintf("login: %s\n", s.Creds.Login))
+		b.WriteString(fmt.Sprintf("password: %s", s.Creds.Password))
+	case CardSecret:
+		b.WriteString(fmt.Sprintf("Card Number: %s\n", s.Card.Number))
+		b.WriteString(fmt.Sprintf("Exp: %d/%d", s.Card.ExpMonth, s.Card.ExpYear))
+		b.WriteString(fmt.Sprintf("CVV: %d", s.Card.CVV))
+	case TextSecret:
+		b.WriteString(fmt.Sprintf("Text: %s\n", s.Text.Content))
+	case BlobSecret:
+		// do nothing, file should be saved
+	}
+
+	return b.String()
 }
 
 const timeFormat = "2006-01-02T15:04:05Z07:00"

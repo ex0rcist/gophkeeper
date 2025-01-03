@@ -2,11 +2,10 @@ package menu
 
 import (
 	"gophkeeper/internal/keeper/tui"
+	"gophkeeper/internal/keeper/tui/styles"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-
-	"github.com/charmbracelet/lipgloss"
 )
 
 var (
@@ -30,8 +29,6 @@ type MenuScreen struct {
 	choice    string
 	menuItems []MenuItem
 	itemsMap  map[string]int
-
-	style lipgloss.Style
 }
 
 func (s MenuScreen) Make(msg tui.NavigationMsg, width, height int) (tui.Teable, error) {
@@ -39,11 +36,7 @@ func (s MenuScreen) Make(msg tui.NavigationMsg, width, height int) (tui.Teable, 
 }
 
 func NewMenu() *MenuScreen {
-	m := MenuScreen{
-		itemsMap: make(map[string]int, len(menuItems)),
-		style:    lipgloss.NewStyle(),
-	}
-
+	m := MenuScreen{itemsMap: make(map[string]int, len(menuItems))}
 	m.prepareMenuModel(menuItems)
 
 	return &m
@@ -82,7 +75,7 @@ func (s *MenuScreen) Update(msg tea.Msg) tea.Cmd {
 }
 
 func (s MenuScreen) View() string {
-	return s.style.Render(s.list.View())
+	return styles.Regular.Render(s.list.View())
 }
 
 func (s *MenuScreen) prepareMenuModel(menuItems []MenuItem) {

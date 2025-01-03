@@ -7,12 +7,9 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type StorageCreateScreen struct {
-	style lipgloss.Style
-
 	textInput textinput.Model
 }
 
@@ -27,10 +24,7 @@ func NewStorageCreateScreen() *StorageCreateScreen {
 	ti.CharLimit = 156
 	ti.Width = 20
 
-	return &StorageCreateScreen{
-		textInput: ti,
-		style:     lipgloss.NewStyle(),
-	}
+	return &StorageCreateScreen{textInput: ti}
 }
 
 func (s StorageCreateScreen) Init() tea.Cmd {

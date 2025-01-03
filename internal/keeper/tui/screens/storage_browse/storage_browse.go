@@ -5,14 +5,16 @@ import (
 	"fmt"
 	"gophkeeper/internal/keeper/storage"
 	"gophkeeper/internal/keeper/tui"
+	"gophkeeper/internal/keeper/tui/styles"
 	"gophkeeper/pkg/models"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/atotto/clipboard"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 const (
@@ -22,7 +24,6 @@ const (
 type StorageBrowseScreen struct {
 	storage storage.Storage
 	table   table.Model
-	style   lipgloss.Style
 }
 
 func (s StorageBrowseScreen) Make(msg tui.NavigationMsg, width, height int) (tui.Teable, error) {
@@ -33,7 +34,6 @@ func NewStorageBrowseScreenScreen(strg storage.Storage) *StorageBrowseScreen {
 	scr := &StorageBrowseScreen{
 		storage: strg,
 		table:   prepareTable(),
-		style:   lipgloss.NewStyle(),
 	}
 
 	scr.updateRows()
@@ -75,15 +75,8 @@ func prepareTable() table.Model {
 	)
 
 	st := table.DefaultStyles()
-	st.Header = st.Header.
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("240")).
-		BorderBottom(true).
-		Bold(false)
-	st.Selected = st.Selected.
-		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57")).
-		Bold(false)
+	st.Header = tableHeaderStyle
+	st.Selected = tableSelectedStyle
 	t.SetStyles(st)
 
 	return t
@@ -111,55 +104,95 @@ func (s *StorageBrowseScreen) Update(msg tea.Msg) tea.Cmd {
 		case "a": // add
 			cmd = tui.SetBodyPane(tui.SecretTypeScreen, tui.WithStorage(s.storage))
 			cmds = append(cmds, cmd)
-		case "d":
-			secret, err := s.getSelectedSecret()
-			if err != nil {
-				cmds = append(cmds, tui.ReportError(fmt.Errorf("failed to load secret: %w", err)))
-				break
-			}
-
-			err = s.storage.Delete(context.Background(), secret.ID)
-			if err != nil {
-				cmds = append(cmds, tui.ReportError(fmt.Errorf("failed to delete secret: %w", err)))
-			}
-		case "e", "enter":
-			secret, err := s.getSelectedSecret()
-			if err != nil {
-				cmds = append(cmds, tui.ReportError(fmt.Errorf("failed to load secret: %w", err)))
-				break
-			}
-
-			screen, err := s.getScreenForSecret(secret)
-			if err != nil {
-				cmds = append(cmds, tui.ReportError(err))
-				break
-			}
-
-			cmd = tui.SetBodyPane(screen, tui.WithSecret(secret), tui.WithStorage(s.storage))
-			cmds = append(cmds, cmd)
+		case "e", "enter": // edit
+			cmds = append(cmds, s.handleEdit())
+		case "c":
+			cmds = append(cmds, s.handleCopy())
+		case "d": // delete
+			cmds = append(cmds, s.handleDelete())
 		}
 	}
 
 	s.updateRows()
-	s.table, cmd = s.table.Update(msg)
 	s.table.Focus()
-
+	s.table, cmd = s.table.Update(msg)
 	cmds = append(cmds, cmd)
+
 	return tea.Batch(cmds...)
 }
 
 func (s StorageBrowseScreen) View() string {
 	var b strings.Builder
 
-	st := s.style.
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("240"))
+	b.WriteString(fmt.Sprintf("Operating storage %s\n", styles.Highlighted.Render(s.storage.String())))
+	b.WriteString(fmt.Sprintf("Use ↑↓ to navigate, (a)dd, (e)dit, (d)elete, (c)opy\n"))
+	b.WriteString(tableStyle.Render(s.table.View()))
 
-	b.WriteString(fmt.Sprintf("Operating storage %s\n", s.storage.String()))
-	b.WriteString(fmt.Sprintf("Use ↑↓ to navigate, (a)dd, (e)dit, (d)elete, (c)opy\n")) // TODO: help bindings
-	b.WriteString(st.Render(s.table.View()))
+	return screenStyle.Render(b.String())
+}
 
-	return b.String()
+func (s *StorageBrowseScreen) HelpBindings() []key.Binding {
+	return []key.Binding{
+		key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "add secret")),
+		key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "edit secret")),
+		key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete secret")),
+		key.NewBinding(key.WithKeys("c"), key.WithHelp("c", "copy/save secret")),
+	}
+}
+
+func (s StorageBrowseScreen) handleEdit() tea.Cmd {
+	secret, err := s.getSelectedSecret()
+	if err != nil {
+		return errCmd("failed to load secret: %w", err)
+	}
+
+	screen, err := s.getScreenForSecret(secret)
+	if err != nil {
+		return errCmd("failed to get screen: %w", err)
+	}
+
+	return tui.SetBodyPane(screen, tui.WithSecret(secret), tui.WithStorage(s.storage))
+}
+
+func (s StorageBrowseScreen) handleCopy() tea.Cmd {
+	secret, err := s.getSelectedSecret()
+	if err != nil {
+		return errCmd("failed to load secret: %w", err)
+	}
+
+	if secret.SecretType == string(models.BlobSecret) {
+		// prompt and save file
+		// p := tui.NewPrompt("choose path to ")
+		// TODO!!!
+	}
+
+	if err := clipboard.WriteAll(secret.ToClipboard()); err != nil {
+		return errCmd("Failed to copy to clipboard: %w", err)
+	}
+
+	return infoCmd("secret copied successfully")
+}
+
+func (s StorageBrowseScreen) handleDelete() tea.Cmd {
+	secret, err := s.getSelectedSecret()
+	if err != nil {
+		return errCmd("failed to load secret", err)
+	}
+
+	err = s.storage.Delete(context.Background(), secret.ID)
+	if err != nil {
+		return errCmd("failed to delete secret", err)
+	}
+
+	return infoCmd("secret deleted")
+}
+
+func errCmd(msg string, err error) tea.Cmd {
+	return tui.ReportError(fmt.Errorf("%s: %w", msg, err))
+}
+
+func infoCmd(msg string) tea.Cmd {
+	return tui.ReportInfo("%s", msg)
 }
 
 func (s StorageBrowseScreen) getSelectedSecret() (secret *models.Secret, err error) {
@@ -204,12 +237,6 @@ func (s StorageBrowseScreen) getScreenForSecret(secret *models.Secret) (tui.Scre
 	}
 }
 
-func sortSecrets(secrets []models.Secret) {
-	sort.Slice(secrets, func(i, j int) bool {
-		return secrets[i].UpdatedAt.After(secrets[j].UpdatedAt)
-	})
-}
-
 func (s StorageBrowseScreen) colsWidth() int {
 	cols := s.table.Columns()
 	total := tableBorderSize
@@ -218,4 +245,10 @@ func (s StorageBrowseScreen) colsWidth() int {
 	}
 
 	return total
+}
+
+func sortSecrets(secrets []models.Secret) {
+	sort.Slice(secrets, func(i, j int) bool {
+		return secrets[i].UpdatedAt.After(secrets[j].UpdatedAt) // UpdatedAt desc
+	})
 }

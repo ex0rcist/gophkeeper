@@ -2,6 +2,7 @@ package menu
 
 import (
 	"fmt"
+	"gophkeeper/internal/keeper/tui/styles"
 	"io"
 	"strings"
 
@@ -11,8 +12,8 @@ import (
 )
 
 var (
-	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
-	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
+	itemStyle         = styles.Regular.PaddingLeft(4)
+	selectedItemStyle = styles.Regular.PaddingLeft(2).Foreground(lipgloss.Color("170"))
 )
 
 type item string

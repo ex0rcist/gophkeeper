@@ -3,8 +3,8 @@ package top
 import (
 	"fmt"
 	"gophkeeper/internal/keeper/tui"
-	"gophkeeper/internal/keeper/tui/keys"
 	"gophkeeper/internal/keeper/tui/styles"
+	"reflect"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/cursor"
@@ -17,39 +17,36 @@ type mode int
 
 const (
 	normalMode mode = iota // default
-	promptMode             // confirm prompt is visible and taking input
+	promptMode             // prompt is visible
 )
 
 type model struct {
 	*tui.PaneManager
 
 	makers map[tui.Screen]tui.ScreenMaker
-	// modules    *module.Service
+
 	width    int
 	height   int
 	mode     mode
 	showHelp bool
 	prompt   *tui.Prompt
-
-	err  error
-	info string
+	err      error
+	info     string
 }
 
 func newModel() (model, error) {
-
-	makers := makeMakers()
+	makers := prepareMakers()
 
 	m := model{
 		PaneManager: tui.NewPaneManager(makers),
 		makers:      makers,
 	}
+
 	return m, nil
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(
-		m.PaneManager.Init(),
-	)
+	return m.PaneManager.Init()
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -58,35 +55,30 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds []tea.Cmd
 	)
 
-	// if m.dump != nil {
-	// 	spew.Fdump(m.dump, msg)
-	// }
-
 	switch msg := msg.(type) {
 	case tui.PromptMsg:
-		// Enable prompt widget
 		m.mode = promptMode
 		var blink tea.Cmd
 		m.prompt, blink = tui.NewPrompt(msg)
-		// Send out message to panes to resize themselves to make room for the prompt above it.
-		_ = m.PaneManager.Update(tea.WindowSizeMsg{
+
+		// Tell panes to resize themselves
+		cmd = m.PaneManager.Update(tea.WindowSizeMsg{
 			Height: m.viewHeight(),
 			Width:  m.viewWidth(),
 		})
+
 		return m, tea.Batch(cmd, blink)
+
 	case tea.KeyMsg:
-		// Pressing any key makes any info/error message in the footer disappear
-		m.info = ""
+		m.info = "" // Clear info/error messages in the footer
 		m.err = nil
 
 		switch m.mode {
 		case promptMode:
 			closePrompt, cmd := m.prompt.HandleKey(msg)
 			if closePrompt {
-				// Send message to panes to resize themselves to expand back
-				// into space occupied by prompt.
 				m.mode = normalMode
-				_ = m.PaneManager.Update(tea.WindowSizeMsg{
+				m.PaneManager.Update(tea.WindowSizeMsg{
 					Height: m.viewHeight(),
 					Width:  m.viewWidth(),
 				})
@@ -95,79 +87,61 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		switch {
-		case key.Matches(msg, keys.Global.Quit):
+		case key.Matches(msg, tui.GlobalKeys.Quit):
 			return m, tui.YesNoPrompt("Quit?", tea.Quit)
-		case key.Matches(msg, keys.Global.Help):
-			// '?' toggles help widget
+		case key.Matches(msg, tui.GlobalKeys.Help):
 			m.showHelp = !m.showHelp
-			// Help widget takes up space so update panes' dimensions
+
 			m.PaneManager.Update(tea.WindowSizeMsg{
 				Height: m.viewHeight(),
 				Width:  m.viewWidth(),
 			})
 
-		// case key.Matches(msg, keys.Global.Logs):
-		// 	return m, tui.NavigateTo(tui.LogListKind)
-
 		default:
-			// Send all other keys to panes.
-			if cmd := m.PaneManager.Update(msg); cmd != nil {
-				return m, cmd
-			}
-			// If pane manager doesn't respond with a command, then send key to
-			// any updateable model makers; first one to respond with a command
-			// wins.
-			// for _, maker := range m.makers {
-			// 	if updateable, ok := maker.(updateableMaker); ok {
-			// 		if cmd := updateable.Update(msg); cmd != nil {
-			// 			return m, cmd
-			// 		}
-			// 	}
-			// }
-
-			return m, nil
+			// Send all other keys to panes
+			return m, m.PaneManager.Update(msg)
 		}
+
 	case tui.ErrorMsg:
 		m.err = error(msg)
+
 	case tui.InfoMsg:
 		m.info = string(msg)
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-
-		// log.Printf("top.model size: w:%d, h:%d", msg.Width, msg.Height)
 
 		m.PaneManager.Update(tea.WindowSizeMsg{
 			Height: m.viewHeight(),
 			Width:  m.viewWidth(),
 		})
+
 	case cursor.BlinkMsg:
-		// Send blink message to prompt if in prompt mode otherwise forward it
-		// to the active pane to handle.
 		if m.mode == promptMode {
 			cmd = m.prompt.HandleBlink(msg)
 		} else {
-			// cmd = m.FocusedModel().Update(msg)
+			cmd = m.PaneManager.FocusedModel().Update(msg)
 		}
 		return m, cmd
 	default:
-		// Send remaining msg types to pane manager to route accordingly.
+		// Send remaining msg types to pane manager
 		cmds = append(cmds, m.PaneManager.Update(msg))
 	}
+
 	return m, tea.Batch(cmds...)
 }
 
 func (m model) View() string {
-	// Start composing vertical stack of components that fill entire terminal.
 	var components []string
 
-	// Add prompt if in prompt mode.
+	// Add prompt if in prompt mode
 	if m.mode == promptMode {
 		components = append(components, m.prompt.View(m.width))
 	}
 
-	// Add panes
-	components = append(components, lipgloss.NewStyle().
+	// Add pane manager
+	components = append(components, styles.Regular.
 		Height(m.viewHeight()).
 		Width(m.viewWidth()).
 		Render(m.PaneManager.View()),
@@ -212,15 +186,12 @@ func (m model) View() string {
 }
 
 var (
-	helpWidget    = styles.Padded.Background(styles.Grey).Foreground(styles.White).Render(fmt.Sprintf("%s for help", keys.Global.Help.Help().Key))
+	helpWidget    = styles.Padded.Background(styles.Grey).Foreground(styles.White).Render(fmt.Sprintf("%s for help", tui.GlobalKeys.Help.Help().Key))
 	versionWidget = styles.Padded.Background(styles.DarkGrey).Foreground(styles.White).Render("0.0.1 (21.12.24)")
 )
 
 func (m model) availableFooterMsgWidth() int {
-	// -2 to accommodate padding
 	return max(0, m.width-lipgloss.Width(helpWidget)-lipgloss.Width(versionWidget))
-
-	//return m.width
 }
 
 func (m model) viewHeight() int {
@@ -232,35 +203,30 @@ func (m model) viewHeight() int {
 		vh -= tui.HelpWidgetHeight
 	}
 
-	//return max(tui.MinContentHeight, vh)
-
+	// TODO: debug max(tui.MinContentHeight, vh)
 	return vh
 }
 
-// viewWidth retrieves the width available within the main view
-//
-// TODO: rename contentWidth
+// Width available within the main view
 func (m model) viewWidth() int {
 	return max(tui.MinContentWidth, m.width)
 }
 
-var (
-	helpKeyStyle  = styles.Bold.Foreground(styles.HelpKey).Margin(0, 1, 0, 0)
-	helpDescStyle = styles.Regular.Foreground(styles.HelpDesc)
-)
+var ()
 
 // help renders key bindings
 func (m model) help() string {
 	// Compile list of bindings to render
-	bindings := []key.Binding{keys.Global.Help, keys.Global.Quit}
+	bindings := []key.Binding{tui.GlobalKeys.Help, tui.GlobalKeys.Quit}
+
 	switch m.mode {
 	case promptMode:
 		bindings = append(bindings, m.prompt.HelpBindings()...)
 	default:
 		bindings = append(bindings, m.PaneManager.HelpBindings()...)
 	}
-	bindings = append(bindings, keys.KeyMapToSlice(keys.Global)...)
-	//bindings = append(bindings, keys.KeyMapToSlice(keys.Navigation)...)
+
+	bindings = append(bindings, keyMapToSlice(tui.GlobalKeys)...)
 	bindings = removeDuplicateBindings(bindings)
 
 	// Enumerate through each group of bindings, populating a series of
@@ -277,9 +243,10 @@ func (m model) help() string {
 			descs []string
 		)
 		for j := i; j < min(i+rows, len(bindings)); j++ {
-			keys = append(keys, helpKeyStyle.Render(bindings[j].Help().Key))
-			descs = append(descs, helpDescStyle.Render(bindings[j].Help().Desc))
+			keys = append(keys, styles.HelpKeyStyle.Render(bindings[j].Help().Key))
+			descs = append(descs, styles.HelpDescStyle.Render(bindings[j].Help().Desc))
 		}
+
 		// Render pair of columns; beyond the first pair, render a three space
 		// left margin, in order to visually separate the pairs.
 		var cols []string
@@ -300,13 +267,12 @@ func (m model) help() string {
 		}
 		pairs = append(pairs, pair)
 	}
+
 	// Join pairs of columns and enclose in a border
 	content := lipgloss.JoinHorizontal(lipgloss.Top, pairs...)
 	return styles.Border.Height(rows).Width(m.width - 2).Render(content)
 }
 
-// removeDuplicateBindings removes duplicate bindings from a list of bindings. A
-// binding is deemed a duplicate if another binding has the same list of keys.
 func removeDuplicateBindings(bindings []key.Binding) []key.Binding {
 	seen := make(map[string]struct{})
 	var i int
@@ -321,4 +287,16 @@ func removeDuplicateBindings(bindings []key.Binding) []key.Binding {
 		i++
 	}
 	return bindings[:i]
+}
+
+func keyMapToSlice(t any) (bindings []key.Binding) {
+	typ := reflect.TypeOf(t)
+	if typ.Kind() != reflect.Struct {
+		return nil
+	}
+	for i := 0; i < typ.NumField(); i++ {
+		v := reflect.ValueOf(t).Field(i)
+		bindings = append(bindings, v.Interface().(key.Binding))
+	}
+	return
 }

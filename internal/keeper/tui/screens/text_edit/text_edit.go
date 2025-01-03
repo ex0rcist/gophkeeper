@@ -7,6 +7,7 @@ import (
 	"gophkeeper/internal/keeper/storage"
 	"gophkeeper/internal/keeper/tui"
 	"gophkeeper/internal/keeper/tui/components"
+	"gophkeeper/internal/keeper/tui/styles"
 	"gophkeeper/pkg/models"
 	"log"
 	"strings"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 var (
@@ -27,18 +27,6 @@ const (
 	textTitle = iota
 	textMetadata
 	textContent
-)
-
-var (
-	focusedStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	blurredStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-	cursorStyle         = focusedStyle
-	noStyle             = lipgloss.NewStyle()
-	helpStyle           = blurredStyle
-	cursorModeHelpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
-
-	focusedButton = focusedStyle.Render("[ Submit ]")
-	blurredButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Submit"))
 )
 
 type TextEditScreen struct {
@@ -100,14 +88,6 @@ func (s *TextEditScreen) Update(msg tea.Msg) tea.Cmd {
 		cmd  tea.Cmd
 		cmds []tea.Cmd
 	)
-
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "enter":
-
-		}
-	}
 
 	// Handle input group. TODO: fix blink
 	ig, cmd := s.inputGroup.Update(msg)
@@ -178,8 +158,8 @@ func newInput(opts inputOpts) textinput.Model {
 
 	if opts.focus {
 		t.Focus()
-		t.PromptStyle = focusedStyle
-		t.TextStyle = focusedStyle
+		t.PromptStyle = styles.Focused
+		t.TextStyle = styles.Focused
 	}
 
 	return t

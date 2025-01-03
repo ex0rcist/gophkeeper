@@ -7,6 +7,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+type ReloadSecretList struct{} // TODO
+
 type NavigationCallback func(args ...any) tea.Cmd
 
 // NavigationMsg is an instruction to navigate to a page

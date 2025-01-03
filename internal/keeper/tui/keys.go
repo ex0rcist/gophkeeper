@@ -1,22 +1,14 @@
-package keys
+package tui
 
 import (
 	"github.com/charmbracelet/bubbles/key"
 )
 
-type global struct {
-	Logs key.Binding
+var GlobalKeys = struct {
 	Quit key.Binding
 	Help key.Binding
 	Tab  key.Binding
-	Back key.Binding
-}
-
-var Global = global{
-	Logs: key.NewBinding(
-		key.WithKeys("ctrl+l", "fn+l"),
-		key.WithHelp("ctrl+l", "show logs"),
-	),
+}{
 	Quit: key.NewBinding(
 		key.WithKeys("ctrl+c", "esc"),
 		key.WithHelp("ctrl+c", "quit"),
@@ -27,10 +19,6 @@ var Global = global{
 	),
 	Tab: key.NewBinding(
 		key.WithKeys("tab"),
-		key.WithHelp("tab", "cycle panes"),
-	),
-	Back: key.NewBinding(
-		key.WithKeys("ctrl+b"),
-		key.WithHelp("ctrl+b", "back"),
+		key.WithHelp("tab", "cycle menu/body"),
 	),
 }

@@ -54,7 +54,7 @@ func NewPrompt(msg PromptMsg) (*Prompt, tea.Cmd) {
 	model.Prompt = msg.Prompt
 	model.SetValue(msg.InitialValue)
 	model.Placeholder = msg.Placeholder
-	model.PlaceholderStyle = lipgloss.NewStyle().Faint(true)
+	model.PlaceholderStyle = styles.Regular.Faint(true)
 	blink := model.Focus()
 
 	prompt := Prompt{

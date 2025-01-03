@@ -7,6 +7,7 @@ import (
 	"gophkeeper/internal/keeper/storage"
 	"gophkeeper/internal/keeper/tui"
 	"gophkeeper/internal/keeper/tui/components"
+	"gophkeeper/internal/keeper/tui/styles"
 	"gophkeeper/pkg/models"
 	"log"
 	"os"
@@ -15,30 +16,16 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 var (
-	errMetadataEmpty = errors.New("Please enter metadata")
-	errContentEmpty  = errors.New("Please enter content")
 	errTitleEmpty    = errors.New("Please enter title")
+	errMetadataEmpty = errors.New("Please enter metadata")
 )
 
 const (
 	blobTitle = iota
 	blobMetadata
-)
-
-var (
-	focusedStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	blurredStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-	cursorStyle         = focusedStyle
-	noStyle             = lipgloss.NewStyle()
-	helpStyle           = blurredStyle
-	cursorModeHelpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
-
-	focusedButton = focusedStyle.Render("[ Submit ]")
-	blurredButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Submit"))
 )
 
 type BlobEditScreen struct {
@@ -51,8 +38,6 @@ type BlobEditScreen struct {
 func (s BlobEditScreen) Make(msg tui.NavigationMsg, width, height int) (tui.Teable, error) {
 	return NewBlobEditScreen(msg.Secret, msg.Storage), nil
 }
-
-// TODO: download?
 
 func NewBlobEditScreen(secret *models.Secret, strg storage.Storage) *BlobEditScreen {
 	m := BlobEditScreen{
@@ -114,7 +99,6 @@ func (s *BlobEditScreen) Update(msg tea.Msg) tea.Cmd {
 		cmds []tea.Cmd
 	)
 
-	// Handle input group. TODO: fix blink
 	ig, cmd := s.inputGroup.Update(msg)
 	s.inputGroup = ig.(components.InputGroup)
 
@@ -206,8 +190,8 @@ func newInput(opts inputOpts) textinput.Model {
 
 	if opts.focus {
 		t.Focus()
-		t.PromptStyle = focusedStyle
-		t.TextStyle = focusedStyle
+		t.PromptStyle = styles.Focused
+		t.TextStyle = styles.Focused
 	}
 
 	return t
