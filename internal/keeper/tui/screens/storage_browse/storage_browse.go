@@ -7,6 +7,7 @@ import (
 	"gophkeeper/internal/keeper/tui"
 	"gophkeeper/internal/keeper/tui/styles"
 	"gophkeeper/pkg/models"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -20,6 +21,11 @@ import (
 const (
 	tableBorderSize = 4
 )
+
+type savePathMsg = struct {
+	path   string
+	secret *models.Secret
+}
 
 type StorageBrowseScreen struct {
 	storage storage.Storage
@@ -41,47 +47,6 @@ func NewStorageBrowseScreenScreen(strg storage.Storage) *StorageBrowseScreen {
 	return scr
 }
 
-func (s *StorageBrowseScreen) updateRows() {
-	secrets, _ := s.storage.GetAll(context.Background())
-
-	sortSecrets(secrets)
-
-	rows := []table.Row{}
-	for _, sec := range secrets {
-		rows = append(rows, table.Row{
-			strconv.Itoa(int(sec.ID)),
-			sec.Title,
-			sec.SecretType,
-			sec.CreatedAt.Format("02 Jan 06 15:04"),
-			sec.UpdatedAt.Format("02 Jan 06 15:04"),
-		})
-	}
-
-	s.table.SetRows(rows)
-}
-
-func prepareTable() table.Model {
-	columns := []table.Column{
-		{Title: "id", Width: 5},
-		{Title: "Title", Width: 20},
-		{Title: "SecretType", Width: 20},
-		{Title: "Created", Width: 20},
-		{Title: "Updated", Width: 20},
-	}
-
-	t := table.New(
-		table.WithColumns(columns),
-		table.WithFocused(true),
-	)
-
-	st := table.DefaultStyles()
-	st.Header = tableHeaderStyle
-	st.Selected = tableSelectedStyle
-	t.SetStyles(st)
-
-	return t
-}
-
 func (s StorageBrowseScreen) Init() tea.Cmd {
 	return nil
 }
@@ -93,14 +58,14 @@ func (s *StorageBrowseScreen) Update(msg tea.Msg) tea.Cmd {
 	)
 
 	switch msg := msg.(type) {
-
+	case savePathMsg: // msg from prompt for blob-secret copy-hotkey
+		os.WriteFile(msg.path, msg.secret.Blob.FileBytes, 0644)
+		cmds = append(cmds, infoCmd("file saved successfully"))
 	case tea.WindowSizeMsg:
 		s.table.SetWidth(min(msg.Width, s.colsWidth()))
 		s.table.SetHeight(msg.Height - tableBorderSize)
 	case tea.KeyMsg:
 		switch msg.String() {
-
-		// TODO: help? keys?
 		case "a": // add
 			cmd = tui.SetBodyPane(tui.SecretTypeScreen, tui.WithStorage(s.storage))
 			cmds = append(cmds, cmd)
@@ -140,6 +105,25 @@ func (s *StorageBrowseScreen) HelpBindings() []key.Binding {
 	}
 }
 
+func (s *StorageBrowseScreen) updateRows() {
+	secrets, _ := s.storage.GetAll(context.Background())
+
+	sortSecrets(secrets)
+
+	rows := []table.Row{}
+	for _, sec := range secrets {
+		rows = append(rows, table.Row{
+			strconv.Itoa(int(sec.ID)),
+			sec.Title,
+			sec.SecretType,
+			sec.CreatedAt.Format("02 Jan 06 15:04"),
+			sec.UpdatedAt.Format("02 Jan 06 15:04"),
+		})
+	}
+
+	s.table.SetRows(rows)
+}
+
 func (s StorageBrowseScreen) handleEdit() tea.Cmd {
 	secret, err := s.getSelectedSecret()
 	if err != nil {
@@ -162,12 +146,13 @@ func (s StorageBrowseScreen) handleCopy() tea.Cmd {
 
 	if secret.SecretType == string(models.BlobSecret) {
 		// prompt and save file
-		// p := tui.NewPrompt("choose path to ")
-		// TODO!!!
+		cmd := tui.StringPrompt("choose path to save", func(str string) tea.Cmd { return func() tea.Msg { return savePathMsg{path: str, secret: secret} } })
+
+		return cmd // infoCmd("file saved successfully")
 	}
 
 	if err := clipboard.WriteAll(secret.ToClipboard()); err != nil {
-		return errCmd("Failed to copy to clipboard: %w", err)
+		return errCmd("failed to copy to clipboard: %w", err)
 	}
 
 	return infoCmd("secret copied successfully")
@@ -251,4 +236,26 @@ func sortSecrets(secrets []models.Secret) {
 	sort.Slice(secrets, func(i, j int) bool {
 		return secrets[i].UpdatedAt.After(secrets[j].UpdatedAt) // UpdatedAt desc
 	})
+}
+
+func prepareTable() table.Model {
+	columns := []table.Column{
+		{Title: "id", Width: 5},
+		{Title: "Title", Width: 20},
+		{Title: "SecretType", Width: 20},
+		{Title: "Created", Width: 20},
+		{Title: "Updated", Width: 20},
+	}
+
+	t := table.New(
+		table.WithColumns(columns),
+		table.WithFocused(true),
+	)
+
+	st := table.DefaultStyles()
+	st.Header = tableHeaderStyle
+	st.Selected = tableSelectedStyle
+	t.SetStyles(st)
+
+	return t
 }
