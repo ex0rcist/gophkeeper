@@ -171,26 +171,8 @@ func (s *CardEditScreen) Submit() error {
 func (s CardEditScreen) View() string {
 	var b strings.Builder
 
-	b.WriteString(fmt.Sprintf("Fill in credential details: \n"))
+	b.WriteString(fmt.Sprintf("Fill in card details: \n"))
 	b.WriteString(s.inputGroup.View())
-
-	// 	cardForm := fmt.Sprintf(
-	// 		`
-	// %s
-	// %s
-
-	// %s %s %s
-	// %s %s %s
-	// `,
-	// 		style.FocusedStyle.Width(30).Render("Card Number"),
-	// 		m.inputGroup.Inputs[cardNumber].View(),
-	// 		style.FocusedStyle.Width(8).Render("Exp MM"),
-	// 		style.FocusedStyle.Width(8).Render("Exp YY"),
-	// 		style.FocusedStyle.Width(6).Render("CVV"),
-	// 		m.inputGroup.Inputs[cardExpMonth].View(),
-	// 		m.inputGroup.Inputs[cardExpYear].View(),
-	// 		m.inputGroup.Inputs[cardCvv].View(),
-	// 	)
 
 	return b.String()
 }

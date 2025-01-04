@@ -2,6 +2,7 @@ package storageopen
 
 import (
 	"fmt"
+	"gophkeeper/internal/keeper/crypto"
 	"gophkeeper/internal/keeper/storage"
 	"gophkeeper/internal/keeper/tui"
 	"gophkeeper/internal/keeper/tui/styles"
@@ -14,8 +15,14 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+type passwordProvidedMsg struct {
+	path     string
+	password string
+}
+
 type StorageOpenScreen struct {
 	filePicker filepicker.Model
+	encrypter  crypto.Encrypter
 	selected   string
 }
 
@@ -32,7 +39,10 @@ func NewStorageOpenScreen() *StorageOpenScreen {
 	fp := filepicker.New()
 	fp.CurrentDirectory = filepath.Join(defaultPath)
 
-	return &StorageOpenScreen{filePicker: fp}
+	return &StorageOpenScreen{
+		filePicker: fp,
+		encrypter:  crypto.NewKeeperEncrypter(),
+	}
 }
 
 func (s StorageOpenScreen) Init() tea.Cmd {
@@ -45,23 +55,23 @@ func (s *StorageOpenScreen) Update(msg tea.Msg) tea.Cmd {
 		cmds []tea.Cmd
 	)
 
-	s.filePicker, cmd = s.filePicker.Update(msg)
-	cmds = append(cmds, cmd)
-
-	if selected, path := s.filePicker.DidSelectFile(msg); selected {
-		cmds = append(cmds, tui.ReportInfo("selected: %v", path))
-
-		strg, err := storage.NewFileStorage(path)
+	switch msg := msg.(type) {
+	case passwordProvidedMsg: // msg from prompt for password
+		strg, err := storage.NewFileStorage(msg.path, msg.password, s.encrypter)
 		if err != nil {
 			cmds = append(cmds, tui.ReportError(err))
 		} else {
-			cmd = tui.NavigateTo(
-				tui.StorageBrowseScreen,
-				tui.WithStorage(strg),
-				tui.WithPosition(tui.BodyPane),
-			)
-
+			cmd = tui.NavigateTo(tui.StorageBrowseScreen, tui.WithStorage(strg), tui.WithPosition(tui.BodyPane))
 			cmds = append(cmds, cmd)
+		}
+	default:
+		s.filePicker, cmd = s.filePicker.Update(msg)
+		cmds = append(cmds, cmd)
+
+		if selected, path := s.filePicker.DidSelectFile(msg); selected {
+			return tui.StringPrompt("enter password", func(str string) tea.Cmd {
+				return func() tea.Msg { return passwordProvidedMsg{path: path, password: str} }
+			})
 		}
 	}
 

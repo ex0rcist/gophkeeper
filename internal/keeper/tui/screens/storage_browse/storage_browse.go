@@ -146,9 +146,7 @@ func (s StorageBrowseScreen) handleCopy() tea.Cmd {
 
 	if secret.SecretType == string(models.BlobSecret) {
 		// prompt and save file
-		cmd := tui.StringPrompt("choose path to save", func(str string) tea.Cmd { return func() tea.Msg { return savePathMsg{path: str, secret: secret} } })
-
-		return cmd // infoCmd("file saved successfully")
+		return tui.StringPrompt("choose path to save", func(str string) tea.Cmd { return func() tea.Msg { return savePathMsg{path: str, secret: secret} } })
 	}
 
 	if err := clipboard.WriteAll(secret.ToClipboard()); err != nil {

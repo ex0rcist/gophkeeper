@@ -15,9 +15,9 @@ var (
 				Background(lipgloss.Color("57")).
 				Bold(false)
 
-	tableHeaderStyle = styles.Border.
+	tableHeaderStyle = styles.Padded.
+				BorderStyle(lipgloss.NormalBorder()).
 				BorderForeground(lipgloss.Color("240")).
 				BorderBottom(true).
-				Bold(false).
-				Padding(0, 1)
+				Bold(false)
 )

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"gophkeeper/internal/keeper/api"
 	"gophkeeper/internal/keeper/config"
-	"gophkeeper/internal/keeper/storage"
 	"gophkeeper/internal/keeper/tui"
 	"os"
 	"os/signal"
@@ -30,8 +29,6 @@ type Keeper struct {
 	client      api.IApiClient
 	accessToken string
 
-	storage storage.Storage
-
 	tuiApp *tui.App
 }
 
@@ -43,19 +40,9 @@ type KeeperDependencies struct {
 }
 
 func New(deps KeeperDependencies) (*Keeper, error) {
-
-	//todo
-	path := "/Users/ex0rcist/secrets.db"
-
-	strg, err := storage.NewFileStorage(path)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Keeper{
-		config:  deps.Config,
-		log:     deps.Logger,
-		storage: strg,
+		config: deps.Config,
+		log:    deps.Logger,
 	}, nil
 }
 

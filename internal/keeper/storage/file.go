@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gophkeeper/internal/keeper/crypto"
 	"gophkeeper/internal/keeper/entities"
 	"gophkeeper/pkg/models"
 	"io"
+	"log"
 	"os"
 	"slices"
 	"sync"
@@ -18,15 +20,18 @@ var _ Storage = (*FileStorage)(nil)
 type FileStorage struct {
 	sync.RWMutex
 
+	file *os.File
 	Data map[uint64]models.Secret `json:"secrets"`
 
-	file     *os.File
-	password string
+	encrypter crypto.Encrypter
+	password  string
 }
 
-func NewFileStorage(path string) (*FileStorage, error) {
+func NewFileStorage(path string, password string, encrypter crypto.Encrypter) (*FileStorage, error) {
 	store := &FileStorage{
-		Data: make(map[uint64]models.Secret),
+		Data:      make(map[uint64]models.Secret),
+		encrypter: encrypter,
+		password:  password,
 	}
 
 	err := store.openOrCreateFile(path)
@@ -100,72 +105,119 @@ func (store *FileStorage) String() string {
 }
 
 func (store *FileStorage) Close(_ context.Context) error {
-	return store.dump()
+	var err error
+
+	err = store.dump()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := store.file.Close(); err != nil {
+			log.Fatal("dump(): failed to close file: %w")
+		}
+	}()
+
+	return err
 }
 
 func (store *FileStorage) openOrCreateFile(path string) error {
+	store.Lock()
+	defer store.Unlock()
+
 	var (
 		existedFile bool
 		err         error
 	)
 
-	store.Lock()
-	defer store.Unlock()
-
-	// Проверяем, существует ли файл
+	// Check if file already existed
 	if _, err = os.Stat(path); err == nil {
 		existedFile = true
 	}
 
-	// Открываем файл для чтения и записи (без очистки содержимого)
+	// Open file
 	store.file, err = os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
-		return fmt.Errorf("restoreOrCreate(): failed to open file: %w", err)
+		return fmt.Errorf("openOrCreateFile(): failed to open file: %w", err)
 	}
 
-	// Если файл не существовал, создаем начальные данные
 	if !existedFile {
 		if err := store.dump(); err != nil {
-			return fmt.Errorf("dump(): failed to write initial data: %w", err)
+			return fmt.Errorf("openOrCreateFile -> dump(): failed to write initial data: %w", err)
 		}
 	} else {
-		// Читаем данные из файла
-		decoder := json.NewDecoder(store.file)
-		if err := decoder.Decode(&store.Data); err != nil {
-			return fmt.Errorf("restore(): failed to decode Data: %w", err)
+		// Read
+		encryptedData, err := io.ReadAll(store.file)
+		if err != nil {
+			return fmt.Errorf("openOrCreateFile -> ReadAll(): failed to read file: %w", err)
 		}
-		// Сбрасываем указатель файла на начало, чтобы избежать проблем с записью
-		store.file.Seek(0, io.SeekStart)
+
+		// Decrypt
+		log.Printf("decrypting %v with pass:%v\n", store.file.Name(), store.password)
+		decryptedData, err := store.DecryptWithRecover(encryptedData, store.password)
+		if err != nil {
+			switch err {
+			case entities.ErrBadPassword, entities.ErrBadEncryption:
+				return err
+			default:
+				return fmt.Errorf("openOrCreateFile -> Decrypt(): failed to decrypt data: %w", err)
+			}
+		}
+
+		// Unmarshal
+		if err := json.Unmarshal(decryptedData, &store.Data); err != nil {
+			return fmt.Errorf("openOrCreateFile -> Unmarshal(): failed to decode Data: %w", err)
+		}
+
+		// Reset pointer
+		if _, err := store.file.Seek(0, io.SeekStart); err != nil {
+			return fmt.Errorf("restore(): failed to reset file pointer: %w", err)
+		}
 	}
 
 	return nil
 }
 
-// dump storage to file
+// Attempt to decode non-encoded file may cause panic
+func (store *FileStorage) DecryptWithRecover(data []byte, password string) (res []byte, err error) {
+	defer func() { // defer can replace named return values
+		if r := recover(); r != nil {
+			err = entities.ErrBadEncryption
+		}
+	}()
+
+	return store.encrypter.Decrypt(data, password)
+}
+
+// Dump storage to file
 func (store *FileStorage) dump() (err error) {
-	// store.TryLock()
-	// defer store.Unlock()
-
-	// defer func() {
-	// 	if closeErr := store.file.Close(); err == nil && closeErr != nil {
-	// 		err = fmt.Errorf("dump(): failed to close file: %w", closeErr)
-	// 	}
-	// }()
-
-	encoder := json.NewEncoder(store.file)
-	if err := encoder.Encode(store.Data); err != nil {
-		return fmt.Errorf("error encoding Data: %w", err)
+	// Serialize data
+	data, err := json.Marshal(store.Data)
+	if err != nil {
+		return fmt.Errorf("dump(): error serializing Data: %w", err)
 	}
 
-	// todo: encryption
+	// Encrypt data
+	log.Printf("encrypting %v with pass:%v\n", store.file.Name(), store.password)
+	encryptedData, err := store.encrypter.Encrypt(data, store.password)
+	if err != nil {
+		return fmt.Errorf("dump(): error encrypting Data: %w", err)
+	}
+
+	// Dump to file
+	if _, err := store.file.Write(encryptedData); err != nil {
+		return fmt.Errorf("dump(): error writing encrypted Data to file: %w", err)
+	}
+
+	// Reset pointer
+	if _, err := store.file.Seek(0, io.SeekStart); err != nil {
+		return fmt.Errorf("dump(): failed to reset file pointer: %w", err)
+	}
 
 	return nil
 }
 
 func (store *FileStorage) nextID() uint64 {
-	// store.TryRLock()
-	// defer store.RUnlock()
-
 	if len(store.Data) == 0 {
 		return 1
 	}

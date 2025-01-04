@@ -1,3 +1,4 @@
+// Provides functions necessary for encryption and decryption
 package crypto
 
 import (
@@ -5,105 +6,113 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/base64"
-	"errors"
 	"fmt"
+	"gophkeeper/internal/keeper/entities"
+	"gophkeeper/internal/keeper/utils"
+	"log"
+	"strings"
 
 	"golang.org/x/crypto/pbkdf2"
 )
 
-const saltSize = 16
-const keySize = 32
-const iterations = 100_000
+const saltLen = 8
 
-// DeriveKey generates a key from a password and a salt using PBKDF2.
-func deriveKey(password, salt []byte) []byte {
-	return pbkdf2.Key(password, salt, iterations, keySize, sha256.New)
+var _ Encrypter = (*KeeperEncrypter)(nil)
+
+type Encrypter interface {
+	Encrypt(data []byte, password string) ([]byte, error)
+	Decrypt(encrypted []byte, password string) ([]byte, error)
 }
 
-// Encrypt encrypts data using AES-GCM with a key derived from the password.
-func Encrypt(data, password []byte) (string, error) {
-	// Generate a random salt
-	salt := make([]byte, saltSize)
-	if _, err := rand.Read(salt); err != nil {
-		return "", fmt.Errorf("failed to generate salt: %w", err)
-	}
-
-	// Derive the encryption key
-	key := deriveKey(password, salt)
-
-	// Create AES cipher
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return "", fmt.Errorf("failed to create AES cipher: %w", err)
-	}
-
-	// Create GCM
-	aesGCM, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", fmt.Errorf("failed to create GCM: %w", err)
-	}
-
-	// Generate a random nonce
-	nonce := make([]byte, aesGCM.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
-		return "", fmt.Errorf("failed to generate nonce: %w", err)
-	}
-
-	// Encrypt the data
-	ciphertext := aesGCM.Seal(nil, nonce, data, nil)
-
-	// Combine salt, nonce, and ciphertext
-	result := append(salt, nonce...)
-	result = append(result, ciphertext...)
-
-	// Return as Base64-encoded string
-	return base64.StdEncoding.EncodeToString(result), nil
+type KeeperEncrypter struct {
+	saltLen int
 }
 
-// Decrypt decrypts data using AES-GCM with a key derived from the password.
-func Decrypt(encodedCiphertext string, password []byte) ([]byte, error) {
-	// Decode the Base64 string
-	data, err := base64.StdEncoding.DecodeString(encodedCiphertext)
+func NewKeeperEncrypter() *KeeperEncrypter {
+	return &KeeperEncrypter{saltLen: saltLen}
+}
+
+func (e KeeperEncrypter) Encrypt(plaintext []byte, password string) ([]byte, error) {
+	key, salt, err := e.deriveKey(password, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode Base64: %w", err)
+		return nil, fmt.Errorf("failed to derive key: %w", err)
 	}
 
-	// Extract salt, nonce, and ciphertext
-	if len(data) < saltSize {
-		return nil, errors.New("invalid ciphertext")
-	}
-	salt := data[:saltSize]
-	data = data[saltSize:]
-
-	// Derive the decryption key
-	key := deriveKey(password, salt)
-
-	// Create AES cipher
-	block, err := aes.NewCipher(key)
+	// creating AES block
+	AESBlock, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create AES cipher: %w", err)
+		return nil, err
 	}
 
-	// Create GCM
-	aesGCM, err := cipher.NewGCM(block)
+	// creating GCM
+	GCM, err := cipher.NewGCM(AESBlock)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create GCM: %w", err)
+		return nil, err
 	}
 
-	// Extract nonce and actual ciphertext
-	nonceSize := aesGCM.NonceSize()
-	if len(data) < nonceSize {
-		return nil, errors.New("invalid ciphertext")
-	}
-	nonce := data[:nonceSize]
-	ciphertext := data[nonceSize:]
-
-	// Decrypt the data
-	plaintext, err := aesGCM.Open(nil, nonce, ciphertext, nil)
+	// generating nonce
+	nonce, err := utils.GenerateRandom(GCM.NonceSize())
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt data: %w", err)
+		return nil, err
 	}
 
-	return plaintext, nil
+	// encrypt data
+	encrypted := GCM.Seal(nonce, nonce, plaintext, nil)
+
+	// store salt alongside encrypted data
+	encrypted = append(encrypted, salt...)
+
+	return encrypted, nil
+}
+
+func (e KeeperEncrypter) Decrypt(encrypted []byte, password string) ([]byte, error) {
+	// extract salt
+	saltIdx := len(encrypted) - e.saltLen
+	salt := encrypted[saltIdx:]
+
+	encrypted = encrypted[:saltIdx]
+
+	key, _, err := e.deriveKey(password, salt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive key: %w", err)
+	}
+
+	// creating AES block
+	AESBlock, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	// creating GCM
+	GCM, err := cipher.NewGCM(AESBlock)
+	if err != nil {
+		return nil, err
+	}
+
+	// extract nonce
+	nonce := encrypted[:GCM.NonceSize()]
+	encrypted = encrypted[GCM.NonceSize():]
+
+	// decrypt data
+	decrypted, err := GCM.Open(nil, nonce, encrypted, nil)
+	if err != nil {
+		log.Println(err)
+		if strings.Contains(err.Error(), "message authentication failed") {
+			return nil, entities.ErrBadPassword
+		}
+		return nil, fmt.Errorf("failed to decrypt: %w", err)
+	}
+
+	return decrypted, nil
+}
+
+func (e KeeperEncrypter) deriveKey(password string, salt []byte) ([]byte, []byte, error) {
+	if len(salt) == 0 {
+		salt = make([]byte, e.saltLen)
+		_, err := rand.Read(salt)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	return pbkdf2.Key([]byte(password), salt, 4096, 32, sha256.New), salt, nil
 }

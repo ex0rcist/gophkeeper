@@ -1,28 +1,24 @@
 package usecase
 
 import (
-	"context"
+	"gophkeeper/internal/keeper/crypto"
 	"gophkeeper/internal/keeper/storage"
 )
 
-type createLocalStoreUseCase struct {
+type CreateLocalStoreUseCase struct {
 }
 
-func NewCreateStorageUsecase() *createLocalStoreUseCase {
-	return &createLocalStoreUseCase{}
+func NewCreateStorageUsecase() *CreateLocalStoreUseCase {
+	return &CreateLocalStoreUseCase{}
 }
 
-func (uc createLocalStoreUseCase) Call(path string) (*storage.FileStorage, error) {
+func (uc CreateLocalStoreUseCase) Call(path string, password string, encrypter crypto.Encrypter) (*storage.FileStorage, error) {
 	var err error
-
-	ctx := context.Background()
 
 	if path == "" {
 		panic("empty path") // todo
 	}
 
-	fs, err := storage.NewFileStorage(path)
-	defer fs.Close(ctx)
-
+	fs, err := storage.NewFileStorage(path, password, encrypter)
 	return fs, err
 }

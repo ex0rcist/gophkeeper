@@ -21,9 +21,6 @@ var (
 	// Default time format
 	TimeFormat = "2006-01-02 15:04"
 
-	// Length of salt for key derivation
-	SaltLen = 8
-
 	// Chunk size for file uplaod and download
 	ChunkSize = 1024 * 1024 * 2
 )
