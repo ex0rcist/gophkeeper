@@ -3,14 +3,13 @@ package textedit
 import (
 	"context"
 	"errors"
-	"fmt"
 	"gophkeeper/internal/keeper/storage"
 	"gophkeeper/internal/keeper/tui"
 	"gophkeeper/internal/keeper/tui/components"
+	"gophkeeper/internal/keeper/tui/screens"
 	"gophkeeper/internal/keeper/tui/styles"
 	"gophkeeper/pkg/models"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -137,12 +136,7 @@ func (s *TextEditScreen) Submit() error {
 }
 
 func (s TextEditScreen) View() string {
-	var b strings.Builder
-
-	b.WriteString(fmt.Sprintf("Fill in text details: \n"))
-	b.WriteString(s.inputGroup.View())
-
-	return b.String()
+	return screens.RenderContent("Fill in text details:", s.inputGroup.View())
 }
 
 type inputOpts struct {

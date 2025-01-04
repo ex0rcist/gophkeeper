@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gophkeeper/internal/keeper/storage"
 	"gophkeeper/internal/keeper/tui"
+	"gophkeeper/internal/keeper/tui/screens"
 	"gophkeeper/internal/keeper/tui/styles"
 	"gophkeeper/pkg/models"
 	"os"
@@ -34,6 +35,8 @@ func NewFilePickScreen(secret *models.Secret, strg storage.Storage, callback tui
 
 	fp := filepicker.New()
 	fp.CurrentDirectory = filepath.Join(defaultPath)
+	fp.AutoHeight = false
+	fp.Height = 10
 
 	m := FilePickScreen{
 		filePicker: fp,
@@ -55,8 +58,15 @@ func (s *FilePickScreen) Update(msg tea.Msg) tea.Cmd {
 		cmds []tea.Cmd
 	)
 
-	// TODO: process back button
-	// tui.SetBodyPane(tui.BlobEditScreen, tui.WithStorage(m.storage), tui.WithSecret(m.secret))
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "b":
+			tui.SetBodyPane(tui.BlobEditScreen, tui.WithStorage(s.storage), tui.WithSecret(s.secret))
+		}
+	case tea.WindowSizeMsg:
+		s.filePicker.Height = msg.Height - styles.FilepickerBotPadding
+	}
 
 	s.filePicker, cmd = s.filePicker.Update(msg)
 	cmds = append(cmds, cmd)
@@ -70,12 +80,10 @@ func (s *FilePickScreen) Update(msg tea.Msg) tea.Cmd {
 }
 
 func (s FilePickScreen) View() string {
-	var b strings.Builder
 
-	b.WriteString(styles.HeaderStyle.Render("Select file to store. Use ←, ↑, →, ↓ to navigate"))
-	b.WriteString("\n\n")
+	var b strings.Builder
 	b.WriteString(fmt.Sprintf("%20s%s:\n", "", s.filePicker.CurrentDirectory))
 	b.WriteString(s.filePicker.View())
 
-	return b.String()
+	return screens.RenderContent("Select file to store. Use ←, ↑, →, ↓ to navigate. Press B to go back", b.String())
 }

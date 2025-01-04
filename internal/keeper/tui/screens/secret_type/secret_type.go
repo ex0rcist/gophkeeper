@@ -3,12 +3,11 @@ package secrettype
 import (
 	"gophkeeper/internal/keeper/storage"
 	"gophkeeper/internal/keeper/tui"
-	"gophkeeper/internal/keeper/tui/styles"
+	"gophkeeper/internal/keeper/tui/screens"
 	"gophkeeper/pkg/models"
 	"maps"
 	"slices"
 	"sort"
-	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -149,10 +148,5 @@ func (s *SecretTypeScreen) Update(msg tea.Msg) tea.Cmd {
 }
 
 func (s *SecretTypeScreen) View() string {
-	var b strings.Builder
-
-	b.WriteString("Select type of secret:\n\n")
-	b.WriteString(styles.Regular.Render(s.list.View()))
-
-	return b.String()
+	return screens.RenderContent("Select type of secret:", s.list.View())
 }

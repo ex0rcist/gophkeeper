@@ -119,19 +119,34 @@ func (m *InputGroup) updateInputs(msg tea.Msg) tea.Cmd {
 
 func (m InputGroup) View() string {
 	var (
-		b     strings.Builder
-		style lipgloss.Style = styles.Blurred
+		b       strings.Builder
+		style   lipgloss.Style = styles.Blurred
+		padding int            // num spaces to pad
 	)
 
-	for i, input := range m.Inputs {
-		// TODO
-		b.WriteString(fmt.Sprintf("%s: %s", input.Placeholder, input.View()))
-
-		if i < m.totalPos-1 {
-			b.WriteRune('\n')
+	// Calc max label width
+	maxLabelLength := 0
+	for _, input := range m.Inputs {
+		if len(input.Placeholder) > maxLabelLength {
+			maxLabelLength = len(input.Placeholder)
 		}
 	}
 
+	// Draw inputs
+	for _, input := range m.Inputs {
+		label := input.Placeholder
+		padding = maxLabelLength - len(label) // Align right
+
+		b.WriteString(fmt.Sprintf("%s: %s\n",
+			strings.Repeat(" ", padding)+label, // Add padding
+			input.View(),
+		))
+	}
+
+	b.WriteRune('\n')
+
+	// Draw buttons
+	buttonPadding := maxLabelLength + 2 // 2 for `: `
 	for i, but := range m.Buttons {
 		title := but.Title
 
@@ -141,11 +156,10 @@ func (m InputGroup) View() string {
 			style = styles.Blurred
 		}
 
-		if i < m.totalPos-1 {
-			b.WriteRune('\n')
-		}
-
-		fmt.Fprintf(&b, "%s", style.Render(title))
+		b.WriteString(fmt.Sprintf("%s%s\n",
+			strings.Repeat(" ", buttonPadding), // Выравниваем кнопки
+			style.Render(title),
+		))
 	}
 
 	return b.String()

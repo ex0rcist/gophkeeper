@@ -26,6 +26,10 @@ var (
 
 	HeaderStyle = Bold.Foreground(lipgloss.Color("#FF79C6"))
 
+	ContentPaddedStyle = Regular.Padding(1, 4)
+
 	HelpKeyStyle  = Bold.Foreground(lipgloss.AdaptiveColor{Dark: "ff", Light: ""}).Margin(0, 1, 0, 0)
 	HelpDescStyle = Regular.Foreground(lipgloss.AdaptiveColor{Dark: "248", Light: "246"})
+
+	FilepickerBotPadding = 10
 )

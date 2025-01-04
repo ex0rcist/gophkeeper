@@ -7,11 +7,11 @@ import (
 	"gophkeeper/internal/keeper/storage"
 	"gophkeeper/internal/keeper/tui"
 	"gophkeeper/internal/keeper/tui/components"
+	"gophkeeper/internal/keeper/tui/screens"
 	"gophkeeper/internal/keeper/tui/styles"
 	"gophkeeper/pkg/models"
 	"log"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -169,12 +169,7 @@ func (s *CardEditScreen) Submit() error {
 }
 
 func (s CardEditScreen) View() string {
-	var b strings.Builder
-
-	b.WriteString(fmt.Sprintf("Fill in card details: \n"))
-	b.WriteString(s.inputGroup.View())
-
-	return b.String()
+	return screens.RenderContent("Fill in card details:", s.inputGroup.View())
 }
 
 type inputOpts struct {

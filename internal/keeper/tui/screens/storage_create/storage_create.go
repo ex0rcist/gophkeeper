@@ -6,10 +6,10 @@ import (
 	"gophkeeper/internal/keeper/storage"
 	"gophkeeper/internal/keeper/tui"
 	"gophkeeper/internal/keeper/tui/components"
+	"gophkeeper/internal/keeper/tui/screens"
 	"gophkeeper/internal/keeper/tui/styles"
 	"gophkeeper/internal/keeper/usecase"
 	"os"
-	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -88,12 +88,7 @@ func (s *StorageCreateScreen) Update(msg tea.Msg) tea.Cmd {
 }
 
 func (s StorageCreateScreen) View() string {
-	var b strings.Builder
-
-	b.WriteString(fmt.Sprintf("Fill in storage details: \n"))
-	b.WriteString(s.inputGroup.View())
-
-	return b.String()
+	return screens.RenderContent("Fill in storage details: \n", s.inputGroup.View())
 }
 
 func (s *StorageCreateScreen) Submit() tea.Cmd {

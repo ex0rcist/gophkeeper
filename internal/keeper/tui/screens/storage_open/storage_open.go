@@ -5,6 +5,7 @@ import (
 	"gophkeeper/internal/keeper/crypto"
 	"gophkeeper/internal/keeper/storage"
 	"gophkeeper/internal/keeper/tui"
+	"gophkeeper/internal/keeper/tui/screens"
 	"gophkeeper/internal/keeper/tui/styles"
 	"os"
 	"path/filepath"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/filepicker"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type passwordProvidedMsg struct {
@@ -38,6 +38,8 @@ func NewStorageOpenScreen() *StorageOpenScreen {
 
 	fp := filepicker.New()
 	fp.CurrentDirectory = filepath.Join(defaultPath)
+	fp.AutoHeight = false
+	fp.Height = 10 // default height
 
 	return &StorageOpenScreen{
 		filePicker: fp,
@@ -75,19 +77,24 @@ func (s *StorageOpenScreen) Update(msg tea.Msg) tea.Cmd {
 		}
 	}
 
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "b":
+			cmds = append(cmds, tui.SetBodyPane(tui.WelcomeScreen))
+		}
+	case tea.WindowSizeMsg:
+		s.filePicker.Height = msg.Height - styles.FilepickerBotPadding
+	}
+
 	cmds = append(cmds, cmd)
 	return tea.Batch(cmds...)
 }
 
 func (s StorageOpenScreen) View() string {
 	var b strings.Builder
-
-	titleStyle := styles.Bold.Foreground(lipgloss.Color("#FF79C6"))
-
-	b.WriteString(titleStyle.Render("Select storage file to open. Use ←, ↑, →, ↓ to navigate"))
-	b.WriteString("\n\n")
 	b.WriteString(fmt.Sprintf("%20s%s:\n", "", s.filePicker.CurrentDirectory))
 	b.WriteString(s.filePicker.View())
 
-	return b.String()
+	return screens.RenderContent("Select storage file to open. Use ←, ↑, →, ↓ to navigate", b.String())
 }

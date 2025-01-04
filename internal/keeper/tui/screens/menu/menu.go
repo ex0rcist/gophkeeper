@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 var (
@@ -26,17 +27,25 @@ type MenuScreen struct {
 
 	list list.Model
 
+	width  int
+	height int
+
 	choice    string
 	menuItems []MenuItem
 	itemsMap  map[string]int
 }
 
 func (s MenuScreen) Make(msg tui.NavigationMsg, width, height int) (tui.Teable, error) {
-	return NewMenu(), nil
+	return NewMenu(width, height), nil
 }
 
-func NewMenu() *MenuScreen {
-	m := MenuScreen{itemsMap: make(map[string]int, len(menuItems))}
+func NewMenu(width, height int) *MenuScreen {
+	m := MenuScreen{
+		itemsMap: make(map[string]int, len(menuItems)),
+		width:    width,
+		height:   height,
+	}
+
 	m.prepareMenuModel(menuItems)
 
 	return &m
@@ -55,7 +64,10 @@ func (s *MenuScreen) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		s.list.SetWidth(msg.Width)
-		s.list.SetHeight(msg.Height)
+		s.list.SetHeight(len(s.itemsMap))
+
+		s.width = msg.Width
+		s.height = msg.Height
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter":
@@ -75,7 +87,11 @@ func (s *MenuScreen) Update(msg tea.Msg) tea.Cmd {
 }
 
 func (s MenuScreen) View() string {
-	return styles.Regular.Render(s.list.View())
+	return lipgloss.Place(
+		s.width, s.height,
+		lipgloss.Center, lipgloss.Center,
+		styles.Regular.Render(s.list.View()),
+	)
 }
 
 func (s *MenuScreen) prepareMenuModel(menuItems []MenuItem) {

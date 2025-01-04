@@ -7,11 +7,11 @@ import (
 	"gophkeeper/internal/keeper/storage"
 	"gophkeeper/internal/keeper/tui"
 	"gophkeeper/internal/keeper/tui/components"
+	"gophkeeper/internal/keeper/tui/screens"
 	"gophkeeper/internal/keeper/tui/styles"
 	"gophkeeper/pkg/models"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -108,12 +108,7 @@ func (s *BlobEditScreen) Update(msg tea.Msg) tea.Cmd {
 }
 
 func (s BlobEditScreen) View() string {
-	var b strings.Builder
-
-	b.WriteString(fmt.Sprintf("Fill in text details: \n"))
-	b.WriteString(s.inputGroup.View())
-
-	return b.String()
+	return screens.RenderContent("Fill in file details:", s.inputGroup.View())
 }
 
 func (s BlobEditScreen) validateInputs() error {
