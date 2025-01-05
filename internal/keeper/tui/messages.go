@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"gophkeeper/internal/keeper/api"
 	"gophkeeper/internal/keeper/storage"
 	"gophkeeper/pkg/models"
 
@@ -18,9 +19,10 @@ type NavigationMsg struct {
 	Position     Position
 	DisableFocus bool
 
-	Storage  storage.Storage
-	Secret   *models.Secret
 	Callback NavigationCallback
+	Client   api.IApiClient
+	Secret   *models.Secret
+	Storage  storage.Storage
 }
 
 func NewNavigationMsg(screen Screen, opts ...NavigateOption) NavigationMsg {
@@ -36,6 +38,12 @@ type NavigateOption func(msg *NavigationMsg)
 func WithCallback(c NavigationCallback) NavigateOption {
 	return func(msg *NavigationMsg) {
 		msg.Callback = c
+	}
+}
+
+func WithClient(c api.IApiClient) NavigateOption {
+	return func(msg *NavigationMsg) {
+		msg.Client = c
 	}
 }
 

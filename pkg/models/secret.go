@@ -56,7 +56,6 @@ type Text struct {
 type Blob struct {
 	FileName  string `json:"file_name"`
 	FileBytes []byte `json:"file_bytes"`
-	IsDone    bool   `json:"is_done"`
 }
 
 type Card struct {

@@ -6,8 +6,8 @@ SERVER_VERSION ?= 0.1.0
 BUILD_DATE ?= $(shell date +%F\ %H:%M:%S)
 BUILD_COMMIT ?= $(shell git rev-parse --short HEAD)
 
-PROTO_SRC = proto/keeper/v1
-PROTO_FILES = auth notification secrets
+PROTO_SRC = proto/keeper/grpcapi
+PROTO_FILES = users notification secrets health
 PROTO_DST = pkg/$(PROTO_SRC)
 
 help: ## display this help screen

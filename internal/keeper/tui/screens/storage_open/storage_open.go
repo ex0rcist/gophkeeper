@@ -63,7 +63,7 @@ func (s *StorageOpenScreen) Update(msg tea.Msg) tea.Cmd {
 		if err != nil {
 			cmds = append(cmds, tui.ReportError(err))
 		} else {
-			cmd = tui.NavigateTo(tui.StorageBrowseScreen, tui.WithStorage(strg), tui.WithPosition(tui.BodyPane))
+			cmd = tui.SetBodyPane(tui.StorageBrowseScreen, tui.WithStorage(strg))
 			cmds = append(cmds, cmd)
 		}
 	default:
@@ -81,7 +81,7 @@ func (s *StorageOpenScreen) Update(msg tea.Msg) tea.Cmd {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "b":
-			cmds = append(cmds, tui.SetBodyPane(tui.WelcomeScreen))
+			cmds = append(cmds, tui.GoToStart())
 		}
 	case tea.WindowSizeMsg:
 		s.filePicker.Height = msg.Height - styles.FilepickerBotPadding

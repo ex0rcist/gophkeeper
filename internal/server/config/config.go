@@ -15,6 +15,7 @@ type Config struct {
 	Address     string
 	PostgresDSN entities.SecretConnURI
 	LogLevel    string
+	SecretKey   string
 }
 
 // Shortcut to use with dig
@@ -25,11 +26,13 @@ type Dependency struct {
 
 // Create server config from ENV vars and cmd flags
 func New() *Config {
-	viper.SetDefault("address", "127.0.0.1:8080")
+	viper.SetDefault("address", "127.0.0.1:50051")
 	viper.SetDefault("postgres-dsn", "postgres://cm:cm@localhost:5432/gophkeeper?sslmode=disable")
 
 	viper.SetDefault("verbose", false)
 	viper.SetDefault("log-level", "INFO")
+
+	viper.SetDefault("secret-key", "123456") // TODO?
 
 	viper.SetEnvPrefix("GOPH")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))

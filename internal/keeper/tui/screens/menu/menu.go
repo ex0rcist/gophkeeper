@@ -11,9 +11,10 @@ import (
 
 var (
 	menuItems = []MenuItem{
-		{name: "Welcome", cmd: tui.SetBodyPane(tui.WelcomeScreen)},
-		{name: "Open passfile", cmd: tui.SetBodyPane(tui.StorageOpenScreen)},
-		{name: "Create new passfile", cmd: tui.SetBodyPane(tui.StorageCreateScreen)},
+		{name: "Welcome", cmd: tui.GoToStart()},
+		{name: "Open local storage", cmd: tui.SetBodyPane(tui.StorageOpenScreen)},
+		{name: "Create local storage", cmd: tui.SetBodyPane(tui.StorageCreateScreen)},
+		{name: "Open remote storage", cmd: tui.SetBodyPane(tui.RemoteOpenScreen)},
 	}
 )
 

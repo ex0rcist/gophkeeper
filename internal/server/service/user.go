@@ -5,11 +5,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"go.uber.org/dig"
 	"gophkeeper/internal/server/entities"
 	"gophkeeper/internal/server/repository"
 	"gophkeeper/internal/server/utils"
 	"gophkeeper/pkg/models"
+
+	"go.uber.org/dig"
 )
 
 //go:generate mockgen -source user.go -destination mocks/mock_user.go -package service
@@ -42,9 +43,10 @@ func (s UsersService) RegisterUser(ctx context.Context, login string, password s
 	var newUser models.User
 
 	// ensure we have no same login
-	// TODO: transaction?
 	user, err := s.repo.GetUserByLogin(ctx, login)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	// fmt.Println("wetwetwetwetwetwetwet", err, errors.Is(err, entities.ErrUserNotFound))
+
+	if err != nil && !errors.Is(err, entities.ErrUserNotFound) {
 		return nil, fmt.Errorf("failed to fetch user: %w", err)
 	}
 	if user != nil {

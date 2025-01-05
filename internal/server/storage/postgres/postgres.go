@@ -28,21 +28,6 @@ type PostgresStorage struct {
 	dsn PostgresDSN
 }
 
-// type dbQueryTracer struct {
-// 	logger *zerolog.Logger
-// }
-
-// // Logs query
-// func (tracer *dbQueryTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
-// 	tracer.logger.Debug().Msg(fmt.Sprintf("Executing command \"%s\" with args %v", data.SQL, data.Args))
-// 	return ctx
-// }
-
-// // Does nothing, required by interface
-// func (tracer *dbQueryTracer) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
-// 	// empty
-// }
-
 // PostgresStorage constructor
 func NewPostgresStorage(deps PostgresStorageDependencies) (*PostgresStorage, error) {
 	fmt.Println("new storage")

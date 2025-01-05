@@ -48,6 +48,7 @@ func NewStorageBrowseScreenScreen(strg storage.Storage) *StorageBrowseScreen {
 }
 
 func (s StorageBrowseScreen) Init() tea.Cmd {
+	s.updateRows()
 	return nil
 }
 
@@ -75,10 +76,13 @@ func (s *StorageBrowseScreen) Update(msg tea.Msg) tea.Cmd {
 			cmds = append(cmds, s.handleCopy())
 		case "d": // delete
 			cmds = append(cmds, s.handleDelete())
+
+			// update table
+			s.updateRows()
+			cmds = append(cmds, tui.SetBodyPane(tui.StorageBrowseScreen, tui.WithStorage(s.storage)))
 		}
 	}
 
-	s.updateRows()
 	s.table.Focus()
 	s.table, cmd = s.table.Update(msg)
 	cmds = append(cmds, cmd)
@@ -202,7 +206,7 @@ func (s StorageBrowseScreen) loadSecret(rawID string) (*models.Secret, error) {
 		return nil, err
 	}
 
-	return &sec, err
+	return sec, err
 }
 
 func (s StorageBrowseScreen) getScreenForSecret(secret *models.Secret) (tui.Screen, error) {
@@ -230,7 +234,7 @@ func (s StorageBrowseScreen) colsWidth() int {
 	return total
 }
 
-func sortSecrets(secrets []models.Secret) {
+func sortSecrets(secrets []*models.Secret) {
 	sort.Slice(secrets, func(i, j int) bool {
 		return secrets[i].UpdatedAt.After(secrets[j].UpdatedAt) // UpdatedAt desc
 	})

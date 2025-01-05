@@ -9,7 +9,6 @@ import (
 	"gophkeeper/internal/keeper/tui/screens"
 	"gophkeeper/internal/keeper/tui/styles"
 	"gophkeeper/pkg/models"
-	"log"
 	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -53,7 +52,6 @@ func NewTextEditScreen(secret *models.Secret, strg storage.Storage) *TextEditScr
 	buttons := []components.Button{}
 	buttons = append(buttons, components.Button{Title: "[ Submit ]", Cmd: func() tea.Cmd {
 		err := m.Submit()
-		log.Println(err)
 		if err != nil {
 			return tui.ReportError(err)
 		} else {
@@ -124,12 +122,12 @@ func (s *TextEditScreen) Submit() error {
 	s.secret.Text = &models.Text{Content: content}
 	s.secret.UpdatedAt = time.Now()
 
-	// Save text
+	// Save secret
 	if s.secret.ID == 0 {
 		s.secret.CreatedAt = time.Now()
-		err = s.storage.Create(context.Background(), *s.secret)
+		err = s.storage.Create(context.Background(), s.secret)
 	} else {
-		err = s.storage.Update(context.Background(), *s.secret)
+		err = s.storage.Update(context.Background(), s.secret)
 	}
 
 	return err

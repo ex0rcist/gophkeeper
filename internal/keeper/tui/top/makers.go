@@ -6,7 +6,9 @@ import (
 	blobEdit "gophkeeper/internal/keeper/tui/screens/blob_edit"
 	cardEdit "gophkeeper/internal/keeper/tui/screens/card_edit"
 	credentialEdit "gophkeeper/internal/keeper/tui/screens/credential_edit"
+	"gophkeeper/internal/keeper/tui/screens/login"
 	"gophkeeper/internal/keeper/tui/screens/menu"
+	remoteeopen "gophkeeper/internal/keeper/tui/screens/remote_open"
 	secretType "gophkeeper/internal/keeper/tui/screens/secret_type"
 	storageBrowse "gophkeeper/internal/keeper/tui/screens/storage_browse"
 	storageCreate "gophkeeper/internal/keeper/tui/screens/storage_create"
@@ -15,8 +17,8 @@ import (
 	"gophkeeper/internal/keeper/tui/screens/welcome"
 )
 
-// Screen constructors
-func prepareMakers() map[tui.Screen]tui.ScreenMaker {
+// Screen constructors. Inject dependencies if any
+func prepareMakers(deps ModelDependencies) map[tui.Screen]tui.ScreenMaker {
 	return map[tui.Screen]tui.ScreenMaker{
 		tui.WelcomeScreen:        &welcome.WelcomeScreen{},
 		tui.MenuScreen:           &menu.MenuScreen{},
@@ -29,5 +31,7 @@ func prepareMakers() map[tui.Screen]tui.ScreenMaker {
 		tui.CardEditScreen:       &cardEdit.CardEditScreen{},
 		tui.BlobEditScreen:       &blobEdit.BlobEditScreen{},
 		tui.FilePickScreen:       &blobEdit.FilePickScreen{},
+		tui.LoginScreen:          &login.LoginScreen{},
+		tui.RemoteOpenScreen:     &remoteeopen.RemoteOpenScreenMaker{Client: deps.Client},
 	}
 }

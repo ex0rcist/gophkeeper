@@ -96,44 +96,44 @@ func (s *SecretTypeScreen) Update(msg tea.Msg) tea.Cmd {
 
 			switch i.id {
 			case selectBack:
-				// Back to secret list, pass up to pane manager
+				cmd = tui.SetBodyPane(
+					tui.StorageBrowseScreen,
+					tui.WithStorage(s.storage),
+				)
+
 				return cmd
 
 			case selectCredential:
 				sec := models.NewSecret(models.CredSecret)
 
-				cmd = tui.NavigateTo(
+				cmd = tui.SetBodyPane(
 					tui.CredentialEditScreen,
 					tui.WithStorage(s.storage),
 					tui.WithSecret(sec),
-					tui.WithPosition(tui.BodyPane),
 				)
 			case selectText:
 				sec := models.NewSecret(models.TextSecret)
 
-				cmd = tui.NavigateTo(
+				cmd = tui.SetBodyPane(
 					tui.TextEditScreen,
 					tui.WithStorage(s.storage),
 					tui.WithSecret(sec),
-					tui.WithPosition(tui.BodyPane),
 				)
 			case selectCard:
 				sec := models.NewSecret(models.CardSecret)
 
-				cmd = tui.NavigateTo(
+				cmd = tui.SetBodyPane(
 					tui.CardEditScreen,
 					tui.WithStorage(s.storage),
 					tui.WithSecret(sec),
-					tui.WithPosition(tui.BodyPane),
 				)
 			case selectBlob:
 				sec := models.NewSecret(models.BlobSecret)
 
-				cmd = tui.NavigateTo(
+				cmd = tui.SetBodyPane(
 					tui.BlobEditScreen,
 					tui.WithStorage(s.storage),
 					tui.WithSecret(sec),
-					tui.WithPosition(tui.BodyPane),
 				)
 			}
 

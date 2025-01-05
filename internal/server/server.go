@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"gophkeeper/internal/server/config"
-	"gophkeeper/internal/server/httpbackend"
+	"gophkeeper/internal/server/grpcbackend"
 
 	"gophkeeper/internal/server/storage"
 
@@ -29,7 +29,7 @@ type Server struct {
 	storage storage.ServerStorage
 	// privateKey     security.PrivateKey
 
-	httpServer *httpbackend.HTTPServer
+	grpcServer *grpcbackend.GRPCServer
 }
 
 type ServerDependencies struct {
@@ -37,7 +37,7 @@ type ServerDependencies struct {
 
 	Config     *config.Config
 	Storage    storage.ServerStorage
-	HTTPServer *httpbackend.HTTPServer
+	GRPCServer *grpcbackend.GRPCServer
 	Logger     *zap.SugaredLogger
 }
 
@@ -48,7 +48,7 @@ func New(deps ServerDependencies) *Server {
 		log:     deps.Logger,
 		storage: deps.Storage,
 
-		httpServer: deps.HTTPServer,
+		grpcServer: deps.GRPCServer,
 	}
 
 	return server
@@ -62,7 +62,7 @@ func (s *Server) Start() error {
 	// 	return nil, err
 	// }
 
-	s.httpServer.Start()
+	s.grpcServer.Start()
 
 	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
@@ -73,8 +73,8 @@ func (s *Server) Start() error {
 	select {
 	case sig := <-quit:
 		s.log.Info("interrupt: signal " + sig.String())
-	case err := <-s.httpServer.Notify():
-		s.log.Error(err, "Server -> Start() -> s.httpServer.Notify")
+	case err := <-s.grpcServer.Notify():
+		s.log.Error(err, "Server -> Start() -> s.grpcServer.Notify")
 	}
 
 	s.shutdown()
@@ -104,8 +104,8 @@ func (s *Server) shutdown() {
 	defer cancel()
 
 	go func() {
-		s.log.Info("shutting down HTTP API...")
-		if err := s.httpServer.Shutdown(stopCtx); err != nil {
+		s.log.Info("shutting down GRPC API...")
+		if err := s.grpcServer.Shutdown(stopCtx); err != nil {
 			s.log.Error(err)
 		}
 
@@ -145,4 +145,4 @@ type ServerService interface {
 	String() string
 }
 
-var _ ServerService = (*httpbackend.HTTPServer)(nil)
+var _ ServerService = (*grpcbackend.GRPCServer)(nil)

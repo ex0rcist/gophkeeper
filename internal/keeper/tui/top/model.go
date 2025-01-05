@@ -2,6 +2,8 @@ package top
 
 import (
 	"fmt"
+	"gophkeeper/internal/keeper/api"
+	"gophkeeper/internal/keeper/config"
 	"gophkeeper/internal/keeper/tui"
 	"gophkeeper/internal/keeper/tui/styles"
 	"reflect"
@@ -11,6 +13,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"go.uber.org/dig"
 )
 
 type mode int
@@ -20,36 +23,49 @@ const (
 	promptMode             // prompt is visible
 )
 
-type model struct {
+// Top-level tea model
+type Model struct {
 	*tui.PaneManager
 
+	client api.IApiClient
 	makers map[tui.Screen]tui.ScreenMaker
+	prompt *tui.Prompt
+	mode   mode
 
 	width    int
 	height   int
-	mode     mode
 	showHelp bool
-	prompt   *tui.Prompt
 	err      error
 	info     string
 }
 
-func newModel() (model, error) {
-	makers := prepareMakers()
+type ModelDependencies struct {
+	dig.In
 
-	m := model{
+	Config *config.Config
+	Client api.IApiClient
+}
+
+func NewModel(deps ModelDependencies) (*Model, error) {
+	// spinner := spinner.New(spinner.WithSpinner(spinner.Line))
+	// makers := makeMakers(cfg, app, &spinner, helpers)
+
+	makers := prepareMakers(deps)
+
+	m := Model{
+		client:      deps.Client,
 		PaneManager: tui.NewPaneManager(makers),
 		makers:      makers,
 	}
 
-	return m, nil
+	return &m, nil
 }
 
-func (m model) Init() tea.Cmd {
+func (m Model) Init() tea.Cmd {
 	return m.PaneManager.Init()
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd
@@ -132,7 +148,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m model) View() string {
+func (m Model) View() string {
 	var components []string
 
 	// Add prompt if in prompt mode
@@ -190,11 +206,11 @@ var (
 	versionWidget = styles.Padded.Background(styles.DarkGrey).Foreground(styles.White).Render("0.0.1 (21.12.24)")
 )
 
-func (m model) availableFooterMsgWidth() int {
+func (m Model) availableFooterMsgWidth() int {
 	return max(0, m.width-lipgloss.Width(helpWidget)-lipgloss.Width(versionWidget))
 }
 
-func (m model) viewHeight() int {
+func (m Model) viewHeight() int {
 	vh := m.height - tui.FooterHeight
 	if m.mode == promptMode {
 		vh -= tui.PromptHeight
@@ -208,14 +224,12 @@ func (m model) viewHeight() int {
 }
 
 // Width available within the main view
-func (m model) viewWidth() int {
+func (m Model) viewWidth() int {
 	return max(tui.MinContentWidth, m.width)
 }
 
-var ()
-
 // help renders key bindings
-func (m model) help() string {
+func (m Model) help() string {
 	// Compile list of bindings to render
 	bindings := []key.Binding{tui.GlobalKeys.Help, tui.GlobalKeys.Quit}
 

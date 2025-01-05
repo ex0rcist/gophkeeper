@@ -5,8 +5,8 @@ import (
 
 	"gophkeeper/internal/server"
 	"gophkeeper/internal/server/config"
-	"gophkeeper/internal/server/httpbackend"
-	httphandler "gophkeeper/internal/server/httpbackend/handler"
+	"gophkeeper/internal/server/grpcbackend"
+	grpchandlers "gophkeeper/internal/server/grpcbackend/handlers"
 	"gophkeeper/internal/server/repository"
 	"gophkeeper/internal/server/service"
 	"gophkeeper/internal/server/storage"
@@ -56,19 +56,20 @@ func buildDepContainer(cfg *config.Config) *dig.Container {
 	container.Provide(chi.NewRouter, dig.As(new(chi.Router)))
 
 	// HTTP server and backend
-	container.Provide(httpbackend.NewHTTPServer)
-	container.Provide(httpbackend.NewBackend)
-	container.Provide(httpbackend.NewHTTPServerAddress)
+	container.Provide(grpcbackend.NewGRPCServer)
+	container.Provide(grpcbackend.NewBackend)
+	container.Provide(grpcbackend.NewGRPCServerAddress)
 
 	// HTTP handlers
-	container.Provide(httphandler.NewHealthHandler)
-	container.Provide(httphandler.NewSecretsHandler)
-	container.Provide(httphandler.NewUsersHandler)
+	container.Provide(grpchandlers.NewUsersServer)
+	container.Provide(grpchandlers.NewHealthServer)
+	container.Provide(grpchandlers.NewSecretsServer)
+	//container.Provide(grpchandlers.NewNotificationServer)
 
 	// services
 	container.Provide(service.NewHealthService, dig.As(new(service.HealthManager)))
 	container.Provide(service.NewSecretsService, dig.As(new(service.SecretsManager)))
-	container.Provide(service.NewUsersService, dig.As(new(service.SecretsManager)))
+	container.Provide(service.NewUsersService, dig.As(new(service.UsersManager)))
 
 	return container
 }
@@ -82,8 +83,8 @@ func addAppSpecificDependencies(container *dig.Container, cfg *config.Config) *d
 		container.Provide(pgStorage.NewPostgresStorage, dig.As(new(storage.ServerStorage)))
 
 		// Postgres repos
+		container.Provide(pgRepo.NewUsersRepository, dig.As(new(repository.UsersRepository)))
 		container.Provide(pgRepo.NewSecretsRepository, dig.As(new(repository.SecretsRepository)))
-		container.Provide(pgRepo.NewUsersRepository, dig.As(new(repository.SecretsRepository)))
 	}
 
 	return container

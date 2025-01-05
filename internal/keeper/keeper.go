@@ -5,7 +5,7 @@ import (
 	"errors"
 	"gophkeeper/internal/keeper/api"
 	"gophkeeper/internal/keeper/config"
-	"gophkeeper/internal/keeper/tui"
+	"gophkeeper/internal/keeper/tui/app"
 	"os"
 	"os/signal"
 	"syscall"
@@ -23,31 +23,32 @@ const shutdownTimeout = 5 * time.Second
 
 type Keeper struct {
 	config *config.Config
+	tuiApp *app.App
 	log    *zap.SugaredLogger
-	deps   *dig.Container
 
 	client      api.IApiClient
-	accessToken string
-
-	tuiApp *tui.App
+	accessToken string // ???
 }
 
 type KeeperDependencies struct {
 	dig.In
 
+	App    *app.App
 	Config *config.Config
+	Client api.IApiClient
 	Logger *zap.SugaredLogger
 }
 
-func New(deps KeeperDependencies) (*Keeper, error) {
+func NewKeeper(deps KeeperDependencies) (*Keeper, error) {
 	return &Keeper{
+		tuiApp: deps.App,
 		config: deps.Config,
+		client: deps.Client,
 		log:    deps.Logger,
 	}, nil
 }
 
 func (k Keeper) Start() error {
-	k.tuiApp = tui.NewApp()
 	k.tuiApp.Start()
 
 	// app, err := client.NewKeeperClient(cfg)
@@ -66,7 +67,7 @@ func (k Keeper) Start() error {
 	case sig := <-quit:
 		k.log.Info("interrupt: signal " + sig.String())
 	case err := <-k.tuiApp.Notify():
-		if errors.Is(err, tui.ExitCmdErr) {
+		if errors.Is(err, app.ExitCmdErr) {
 			quit <- syscall.SIGINT
 			break
 		}

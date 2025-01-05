@@ -26,6 +26,13 @@ func SetBodyPane(screen Screen, opts ...NavigateOption) tea.Cmd {
 	return NavigateTo(screen, opts...)
 }
 
+func GoToStart() tea.Cmd {
+	return tea.Batch(
+		NavigateTo(WelcomeScreen, []NavigateOption{DisableFocus(), WithPosition(BodyPane)}...),
+		NavigateTo(MenuScreen, []NavigateOption{WithPosition(LeftPane)}...),
+	)
+}
+
 func SetLeftPane(screen Screen) tea.Cmd {
 	return NavigateTo(screen, WithPosition(LeftPane))
 }

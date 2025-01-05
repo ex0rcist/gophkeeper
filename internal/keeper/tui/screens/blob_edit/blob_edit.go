@@ -10,7 +10,6 @@ import (
 	"gophkeeper/internal/keeper/tui/screens"
 	"gophkeeper/internal/keeper/tui/styles"
 	"gophkeeper/pkg/models"
-	"log"
 	"os"
 	"time"
 
@@ -131,10 +130,6 @@ func (s *BlobEditScreen) Submit(path string) error {
 		err error
 	)
 
-	// TODO: spinner ?
-
-	log.Println("called submit")
-
 	err = s.validateInputs()
 	if err != nil {
 		return err
@@ -153,12 +148,12 @@ func (s *BlobEditScreen) Submit(path string) error {
 	}
 	s.secret.UpdatedAt = time.Now()
 
-	// Save
+	// Save secret
 	if s.secret.ID == 0 {
 		s.secret.CreatedAt = time.Now()
-		err = s.storage.Create(context.Background(), *s.secret)
+		err = s.storage.Create(context.Background(), s.secret)
 	} else {
-		err = s.storage.Update(context.Background(), *s.secret)
+		err = s.storage.Update(context.Background(), s.secret)
 	}
 
 	return err

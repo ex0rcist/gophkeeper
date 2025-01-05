@@ -10,7 +10,6 @@ import (
 	"gophkeeper/internal/keeper/tui/screens"
 	"gophkeeper/internal/keeper/tui/styles"
 	"gophkeeper/pkg/models"
-	"log"
 	"strconv"
 	"time"
 
@@ -59,7 +58,6 @@ func NewCardEditScreen(secret *models.Secret, strg storage.Storage) *CardEditScr
 	buttons := []components.Button{}
 	buttons = append(buttons, components.Button{Title: "[ Submit ]", Cmd: func() tea.Cmd {
 		err := m.Submit()
-		log.Println(err)
 		if err != nil {
 			return tui.ReportError(err)
 		} else {
@@ -157,12 +155,12 @@ func (s *CardEditScreen) Submit() error {
 	s.secret.Card = card
 	s.secret.UpdatedAt = time.Now()
 
-	// Save credential
+	// Save secret
 	if s.secret.ID == 0 {
 		s.secret.CreatedAt = time.Now()
-		err = s.storage.Create(context.Background(), *s.secret)
+		err = s.storage.Create(context.Background(), s.secret)
 	} else {
-		err = s.storage.Update(context.Background(), *s.secret)
+		err = s.storage.Update(context.Background(), s.secret)
 	}
 
 	return err

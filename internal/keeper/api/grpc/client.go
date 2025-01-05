@@ -4,34 +4,41 @@ import (
 	"context"
 	"fmt"
 	"gophkeeper/internal/keeper/api"
+	"gophkeeper/internal/keeper/api/grpc/interceptor"
 	"gophkeeper/internal/keeper/config"
+	"gophkeeper/internal/keeper/entities"
 	"gophkeeper/pkg/constants"
 	"gophkeeper/pkg/convert"
 	"gophkeeper/pkg/models"
-	"io"
-	"log"
 	"math"
 	"math/rand/v2"
-	"os"
-	"path/filepath"
 	"sync"
+	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pb "gophkeeper/pkg/proto/keeper/v1"
+	pb "gophkeeper/pkg/proto/keeper/grpcapi"
+)
+
+const (
+	DefaultClientTimeout = time.Second * 5
 )
 
 type GRPCClient struct {
-	config         *config.Config
-	authClient     pb.AuthServiceClient
-	secretsClient  pb.SecretsServiceClient
-	notifyClient   pb.NotificationServiceClient
-	accessToken    string
-	masterPassword string
-	chunkSize      int
-	clientID       int32 // Unique ID to distinguish between multiple running clients for same user
-	previews       sync.Map
+	config        *config.Config
+	usersClient   pb.UsersClient
+	secretsClient pb.SecretsClient
+	notifyClient  pb.NotificationClient
+	accessToken   string
+	password      string // passw to encrypt payload
+	chunkSize     int
+	clientID      int32 // Unique ID to distinguish between multiple running clients for same user
+	previews      sync.Map
 }
 
 var _ api.IApiClient = &GRPCClient{}
@@ -46,13 +53,13 @@ func NewGRPCClient(cfg *config.Config) (*GRPCClient, error) {
 	}
 
 	// Unary interceptors
-	// opts = append(
-	// 	opts,
-	// 	grpc.WithChainUnaryInterceptor(
-	// 		interceptor.Timeout(constants.DefaultClientTimeout),
-	// 		interceptor.AddAuth(&newClient.accessToken, newClient.clientID),
-	// 	),
-	// )
+	opts = append(
+		opts,
+		grpc.WithChainUnaryInterceptor(
+			interceptor.Timeout(DefaultClientTimeout),
+			interceptor.AddAuth(&newClient.accessToken, newClient.clientID),
+		),
+	)
 
 	// Stream interceptor
 	// opts = append(
@@ -82,6 +89,8 @@ func NewGRPCClient(cfg *config.Config) (*GRPCClient, error) {
 	// 	)
 	// }
 
+	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
 	// create gRPC client
 	c, err := grpc.NewClient(
 		string(cfg.ServerAddress),
@@ -92,9 +101,9 @@ func NewGRPCClient(cfg *config.Config) (*GRPCClient, error) {
 	}
 
 	// register services
-	newClient.authClient = pb.NewAuthServiceClient(c)
-	newClient.secretsClient = pb.NewSecretsServiceClient(c)
-	newClient.notifyClient = pb.NewNotificationServiceClient(c)
+	newClient.usersClient = pb.NewUsersClient(c)
+	newClient.secretsClient = pb.NewSecretsClient(c)
+	newClient.notifyClient = pb.NewNotificationClient(c)
 
 	return &newClient, nil
 }
@@ -145,13 +154,12 @@ func (c *GRPCClient) Login(ctx context.Context, login string, password string) (
 		Password: password,
 	}
 
-	response, err := c.authClient.LoginV1(ctx, req)
+	response, err := c.usersClient.LoginV1(ctx, req)
 	if err != nil {
-		return "", err
+		return "", parseError(err)
 	}
 
 	c.accessToken = response.AccessToken
-	c.masterPassword = password
 
 	return response.AccessToken, nil
 }
@@ -162,9 +170,9 @@ func (c *GRPCClient) Register(ctx context.Context, login string, password string
 		Password: password,
 	}
 
-	response, err := c.authClient.RegisterV1(ctx, req)
+	response, err := c.usersClient.RegisterV1(ctx, req)
 	if err != nil {
-		return "", err
+		return "", parseError(err)
 	}
 
 	c.accessToken = response.AccessToken
@@ -172,17 +180,30 @@ func (c *GRPCClient) Register(ctx context.Context, login string, password string
 	return response.AccessToken, nil
 }
 
+func (c *GRPCClient) LoadSecrets(ctx context.Context) ([]*models.Secret, error) {
+	// form gRPC request
+	request := emptypb.Empty{}
+
+	// performing gRPC call
+	response, err := c.secretsClient.GetUserSecretsV1(ctx, &request)
+	if err != nil {
+		return nil, parseError(err)
+	}
+
+	secrets := convert.ProtoToSecrets(response.Secrets)
+	return secrets, nil
+}
+
 func (c *GRPCClient) LoadSecret(ctx context.Context, ID uint64) (*models.Secret, error) {
 	// form gRPC request
 	request := &pb.GetUserSecretRequestV1{
-		MasterPassword: c.masterPassword,
-		Id:             ID,
+		Id: ID,
 	}
 
 	// performing gRPC call
 	response, err := c.secretsClient.GetUserSecretV1(context.Background(), request)
 	if err != nil {
-		return nil, err
+		return nil, parseError(err)
 	}
 
 	secret := convert.ProtoToSecret(response.Secret)
@@ -190,208 +211,67 @@ func (c *GRPCClient) LoadSecret(ctx context.Context, ID uint64) (*models.Secret,
 	return secret, nil
 }
 
-func (c *GRPCClient) SaveCredential(ctx context.Context, ID uint64, metadata, login, password string) error {
-	// form gRPC request
-	request := &pb.SaveUserSecretRequestV1{
-		MasterPassword: c.masterPassword,
-		Secret: &pb.Secret{
-			Id:        ID,
-			CreatedAt: timestamppb.Now(),
-			UpdatedAt: timestamppb.Now(),
-			Metadata:  metadata,
-			Type:      pb.SecretType_SECRET_TYPE_CREDENTIAL,
-			Content: &pb.Secret_Credential{
-				Credential: &pb.Credential{
-					Login:    login,
-					Password: password,
-				},
-			},
-		},
+func (c *GRPCClient) SaveSecret(ctx context.Context, secret *models.Secret) error {
+	sec := &pb.Secret{
+		Title:      secret.Title,
+		Metadata:   secret.Metadata,
+		SecretType: convert.TypeToProto(secret.SecretType),
+		Payload:    secret.Payload,
+		CreatedAt:  timestamppb.New(secret.CreatedAt),
+		UpdatedAt:  timestamppb.New(secret.UpdatedAt),
 	}
 
-	// performing gRPC call
-	_, err := c.secretsClient.SaveUserSecretV1(ctx, request)
-
-	return err
-}
-
-func (c *GRPCClient) SaveText(ctx context.Context, ID uint64, metadata, text string) error {
-	// form gRPC request
-	request := &pb.SaveUserSecretRequestV1{
-		MasterPassword: c.masterPassword,
-		Secret: &pb.Secret{
-			Id:        ID,
-			CreatedAt: timestamppb.Now(),
-			UpdatedAt: timestamppb.Now(),
-			Metadata:  metadata,
-			Type:      pb.SecretType_SECRET_TYPE_TEXT,
-			Content: &pb.Secret_Text{
-				Text: &pb.Text{
-					Text: text,
-				},
-			},
-		},
+	if secret.ID > 0 {
+		sec.Id = secret.ID
 	}
 
-	// performing gRPC call
+	request := &pb.SaveUserSecretRequestV1{Secret: sec}
 	_, err := c.secretsClient.SaveUserSecretV1(ctx, request)
 
-	return err
+	return parseError(err)
 }
 
-func (c *GRPCClient) SaveCard(ctx context.Context, ID uint64, metadata, number string, expMonth, expYear, cvv uint32) error {
-	// form gRPC request
-	request := &pb.SaveUserSecretRequestV1{
-		MasterPassword: c.masterPassword,
-		Secret: &pb.Secret{
-			Id:        ID,
-			CreatedAt: timestamppb.Now(),
-			UpdatedAt: timestamppb.Now(),
-			Metadata:  metadata,
-			Type:      pb.SecretType_SECRET_TYPE_CARD,
-			Content: &pb.Secret_Card{
-				Card: &pb.Card{
-					Number:   number,
-					ExpMonth: expMonth,
-					ExpYear:  expYear,
-					Cvv:      cvv,
-				},
-			},
-		},
+func (c *GRPCClient) DeleteSecret(ctx context.Context, id uint64) error {
+	request := &pb.DeleteUserSecretRequestV1{Id: id}
+	_, err := c.secretsClient.DeleteUserSecretV1(ctx, request)
+
+	return parseError(err)
+}
+
+func (c *GRPCClient) SetToken(token string) {
+	c.accessToken = token
+}
+
+func (c *GRPCClient) GetToken() string {
+	return c.accessToken
+}
+
+func (c *GRPCClient) SetPassword(password string) {
+	c.password = password
+}
+
+func (c *GRPCClient) GetPassword() string {
+	return c.password
+}
+
+func parseError(err error) error {
+	if err == nil {
+		return nil
 	}
 
-	// performing gRPC call
-	_, err := c.secretsClient.SaveUserSecretV1(ctx, request)
-
-	return err
-}
-
-func (c *GRPCClient) UploadFile(ctx context.Context, metadata, filePath string) error {
-	// Open file
-	f, err := os.Open(filePath)
-	if err != nil {
+	st, ok := status.FromError(err)
+	if !ok {
 		return err
 	}
 
-	defer func() {
-		err := f.Close()
-		if err != nil {
-			log.Println(fmt.Errorf("failed to close file: %w", err))
-		}
-	}()
-
-	fileName := filepath.Base(filePath)
-
-	stream, err := c.secretsClient.UploadFileV1(ctx)
-	if err != nil {
+	switch st.Code() {
+	case codes.Unavailable:
+		return entities.ErrServerUnavailable
+	case codes.Unauthenticated:
+		return entities.ErrUnauthenticated
+	case codes.AlreadyExists:
+		return entities.ErrAlreadyExist
+	default:
 		return err
 	}
-
-	buf := make([]byte, c.chunkSize)
-
-	for {
-		n, err := f.Read(buf)
-
-		// File is done uploading
-		if err == io.EOF {
-			break
-		}
-
-		// I/O error
-		if err != nil {
-			return err
-		}
-
-		chunk := buf[:n]
-
-		// Send chunk
-		err = stream.Send(&pb.UploadFileRequestV1{
-			Metadata:       metadata,
-			FileName:       fileName,
-			MasterPassword: c.masterPassword,
-			Chunk:          chunk,
-		})
-		if err != nil {
-			return err
-		}
-	}
-
-	// Close stream
-	_, err = stream.CloseAndRecv()
-
-	return err
-}
-
-func (c *GRPCClient) DownloadFile(ctx context.Context, ID uint64, fileName string) error {
-	// open file
-	f, err := c.openFile(c.config.DownloadPath, fileName)
-	if err != nil {
-		return fmt.Errorf("failed to open file: %w", err)
-	}
-
-	defer func() {
-		err := f.Close()
-		if err != nil {
-			log.Println("failed to close file: ", err)
-		}
-	}()
-
-	req := &pb.DownloadFileRequestV1{
-		Id:             ID,
-		MasterPassword: c.masterPassword,
-	}
-
-	srv, err := c.secretsClient.DownloadFileV1(ctx, req)
-	if err != nil {
-		return fmt.Errorf("unable to establish connection: %w", err)
-	}
-
-	// Start download
-	for {
-		res, err := srv.Recv()
-
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			return fmt.Errorf("transfer session was interrupted: %w", err)
-		}
-
-		// Write chunk to file
-		_, err = f.Write(res.Chunk)
-		if err != nil {
-			return fmt.Errorf("error writing chunk: %w", err)
-		}
-	}
-
-	return nil
-}
-
-func (c *GRPCClient) openFile(path, fileName string) (*os.File, error) {
-	var f *os.File
-
-	// Create download dir if not exists
-	_, err := os.Stat(path)
-
-	if os.IsNotExist(err) {
-		err = os.MkdirAll(path, os.ModePerm)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create download dir: %w", err)
-		}
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Open file
-	filePath := fmt.Sprintf("%s/%s", path, fileName)
-
-	f, err = os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open file: %w", err)
-	}
-
-	return f, nil
 }

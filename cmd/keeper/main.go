@@ -2,7 +2,10 @@ package main
 
 import (
 	"gophkeeper/internal/keeper"
+	"gophkeeper/internal/keeper/api"
+	"gophkeeper/internal/keeper/api/grpc"
 	"gophkeeper/internal/keeper/config"
+	"gophkeeper/internal/keeper/tui/app"
 	"gophkeeper/internal/keeper/tui/top"
 	"gophkeeper/internal/keeper/utils"
 	"log"
@@ -18,7 +21,6 @@ var (
 )
 
 func main() {
-
 	cfg := config.New()
 
 	err := runApp(cfg)
@@ -28,15 +30,11 @@ func main() {
 }
 
 func runApp(cfg *config.Config) error {
+	cont := buildDepContainer(cfg)
 
-	top.Start(cfg)
-
-	return nil
-	// cont := buildDepContainer(cfg)
-
-	// return cont.Invoke(func(keeper *keeper.Keeper) error {
-	// 	return keeper.Start()
-	// })
+	return cont.Invoke(func(keeper *keeper.Keeper) error {
+		return keeper.Start()
+	})
 }
 
 func buildDepContainer(cfg *config.Config) *dig.Container {
@@ -47,7 +45,16 @@ func buildDepContainer(cfg *config.Config) *dig.Container {
 	container.Provide(func() *config.Config { return cfg })
 
 	// Server
-	container.Provide(keeper.New)
+	container.Provide(keeper.NewKeeper)
+
+	// GRPC client
+	container.Provide(grpc.NewGRPCClient, dig.As(new(api.IApiClient)))
+
+	// TUI app
+	container.Provide(app.NewApp)
+
+	// Top app model
+	container.Provide(top.NewModel)
 
 	// Logging
 	container.Provide(utils.NewZapLogger)

@@ -6,10 +6,10 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pb "gophkeeper/pkg/proto/keeper/v1"
+	pb "gophkeeper/pkg/proto/keeper/grpcapi"
 )
 
-// Returns corresponding secret type
+// Returns  secret type
 func ProtoToType(pbType pb.SecretType) models.SecretType {
 	switch pbType {
 	case pb.SecretType_SECRET_TYPE_CREDENTIAL:
@@ -25,7 +25,7 @@ func ProtoToType(pbType pb.SecretType) models.SecretType {
 	}
 }
 
-// Returns corresponding protobuf secret type
+// Returns protobuf secret type
 func TypeToProto(sType string) pb.SecretType {
 	switch sType {
 	case string(models.CredSecret):
@@ -44,44 +44,13 @@ func TypeToProto(sType string) pb.SecretType {
 // Converts secret models to protobuf counterpart
 func SecretToProto(secret *models.Secret) *pb.Secret {
 	pbSecret := &pb.Secret{
-		Id:        secret.ID,
-		CreatedAt: timestamppb.New(secret.CreatedAt),
-		UpdatedAt: timestamppb.New(secret.UpdatedAt),
-		Metadata:  secret.Metadata,
-		Type:      pb.SecretType_SECRET_TYPE_UNSPECIFIED,
-	}
-
-	pbSecret.Type = TypeToProto(secret.SecretType)
-
-	switch secret.SecretType {
-	case string(models.CredSecret):
-		pbSecret.Content = &pb.Secret_Credential{
-			Credential: &pb.Credential{
-				Login:    secret.Creds.Login,
-				Password: secret.Creds.Password,
-			},
-		}
-	case string(models.TextSecret):
-		pbSecret.Content = &pb.Secret_Text{
-			Text: &pb.Text{
-				Text: secret.Text.Content,
-			},
-		}
-	case string(models.BlobSecret):
-		pbSecret.Content = &pb.Secret_Blob{
-			Blob: &pb.Blob{
-				FileName: secret.Blob.FileName,
-			},
-		}
-	case string(models.CardSecret):
-		pbSecret.Content = &pb.Secret_Card{
-			Card: &pb.Card{
-				Number:   secret.Card.Number,
-				ExpYear:  secret.Card.ExpYear,
-				ExpMonth: secret.Card.ExpMonth,
-				Cvv:      secret.Card.CVV,
-			},
-		}
+		Id:         secret.ID,
+		Title:      secret.Title,
+		Metadata:   secret.Metadata,
+		Payload:    secret.Payload,
+		SecretType: TypeToProto(secret.SecretType),
+		CreatedAt:  timestamppb.New(secret.CreatedAt),
+		UpdatedAt:  timestamppb.New(secret.UpdatedAt),
 	}
 
 	return pbSecret
@@ -91,40 +60,35 @@ func SecretToProto(secret *models.Secret) *pb.Secret {
 func ProtoToSecret(pbSecret *pb.Secret) *models.Secret {
 	secret := &models.Secret{
 		ID:         pbSecret.Id,
+		Title:      pbSecret.Title,
+		Metadata:   pbSecret.Metadata,
+		SecretType: string(ProtoToType(pbSecret.SecretType)),
+		Payload:    pbSecret.Payload,
 		CreatedAt:  pbSecret.CreatedAt.AsTime(),
 		UpdatedAt:  pbSecret.UpdatedAt.AsTime(),
-		Metadata:   pbSecret.Metadata,
-		SecretType: string(models.UnknownSecret),
-	}
-
-	secret.SecretType = string(ProtoToType(pbSecret.Type))
-
-	switch secret.SecretType {
-	case string(models.CredSecret):
-		pbCred := pbSecret.Content.(*pb.Secret_Credential)
-		secret.Creds = &models.Credentials{
-			Login:    pbCred.Credential.GetLogin(),
-			Password: pbCred.Credential.GetPassword(),
-		}
-	case string(models.TextSecret):
-		pbText := pbSecret.Content.(*pb.Secret_Text)
-		secret.Text = &models.Text{
-			Content: pbText.Text.GetText(),
-		}
-	case string(models.BlobSecret):
-		pbBlob := pbSecret.Content.(*pb.Secret_Blob)
-		secret.Blob = &models.Blob{
-			FileName: pbBlob.Blob.GetFileName(),
-		}
-	case string(models.CardSecret):
-		pbCard := pbSecret.Content.(*pb.Secret_Card)
-		secret.Card = &models.Card{
-			Number:   pbCard.Card.GetNumber(),
-			ExpYear:  pbCard.Card.GetExpYear(),
-			ExpMonth: pbCard.Card.GetExpMonth(),
-			CVV:      pbCard.Card.GetCvv(),
-		}
 	}
 
 	return secret
+}
+
+// Converts protobuf models to regular models
+func ProtoToSecrets(pbSecrets []*pb.Secret) []*models.Secret {
+	secr := []*models.Secret{}
+
+	for _, s := range pbSecrets {
+		secr = append(secr, ProtoToSecret(s))
+	}
+
+	return secr
+}
+
+// Converts secret models to protobuf counterpart
+func SecretsToProto(secrets []*models.Secret) []*pb.Secret {
+	secr := []*pb.Secret{}
+
+	for _, s := range secrets {
+		secr = append(secr, SecretToProto(s))
+	}
+
+	return secr
 }

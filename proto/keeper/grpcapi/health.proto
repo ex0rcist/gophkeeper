@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package metflix.grpcapi;
+option go_package = "github.com/ex0rcist/gophkeeper/pkg/keeper/grpcapi";
+
+import "google/protobuf/empty.proto";
+
+service Health {
+  rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
+}

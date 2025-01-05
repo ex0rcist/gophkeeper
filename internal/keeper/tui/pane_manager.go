@@ -21,6 +21,9 @@ const (
 	StorageBrowseScreen
 	SecretTypeScreen
 	FilePickScreen
+	LoginScreen
+	RegisterScreen
+	RemoteOpenScreen
 
 	CredentialEditScreen
 	TextEditScreen

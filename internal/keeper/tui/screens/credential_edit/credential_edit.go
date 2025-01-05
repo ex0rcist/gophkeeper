@@ -9,7 +9,6 @@ import (
 	"gophkeeper/internal/keeper/tui/screens"
 	"gophkeeper/internal/keeper/tui/styles"
 	"gophkeeper/pkg/models"
-	"log"
 	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -56,7 +55,6 @@ func NewCredentialEditScreen(secret *models.Secret, strg storage.Storage) *Crede
 	buttons := []components.Button{}
 	buttons = append(buttons, components.Button{Title: "[ Submit ]", Cmd: func() tea.Cmd {
 		err := m.Submit()
-		log.Println(err)
 		if err != nil {
 			return tui.ReportError(err)
 		} else {
@@ -140,12 +138,12 @@ func (s *CredentialEditScreen) Submit() error {
 	s.secret.Creds = &models.Credentials{Login: login, Password: password}
 	s.secret.UpdatedAt = time.Now()
 
-	// Save credential
+	// Save secret
 	if s.secret.ID == 0 {
 		s.secret.CreatedAt = time.Now()
-		err = s.storage.Create(context.Background(), *s.secret)
+		err = s.storage.Create(context.Background(), s.secret)
 	} else {
-		err = s.storage.Update(context.Background(), *s.secret)
+		err = s.storage.Update(context.Background(), s.secret)
 	}
 
 	return err

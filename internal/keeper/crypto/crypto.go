@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"gophkeeper/internal/keeper/entities"
 	"gophkeeper/internal/keeper/utils"
-	"log"
 	"strings"
 
 	"golang.org/x/crypto/pbkdf2"
@@ -96,7 +95,6 @@ func (e KeeperEncrypter) Decrypt(encrypted []byte, password string) ([]byte, err
 	// decrypt data
 	decrypted, err := GCM.Open(nil, nonce, encrypted, nil)
 	if err != nil {
-		log.Println(err)
 		if strings.Contains(err.Error(), "message authentication failed") {
 			return nil, entities.ErrBadPassword
 		}

@@ -61,7 +61,7 @@ func NewStorageCreateScreen() (*StorageCreateScreen, error) {
 	}})
 
 	buttons = append(buttons, components.Button{Title: "[ Back ]", Cmd: func() tea.Cmd {
-		return tui.SetBodyPane(tui.WelcomeScreen)
+		return tui.GoToStart()
 	}})
 
 	scr.inputGroup = components.NewInputGroup(inputs, buttons)
@@ -71,7 +71,6 @@ func NewStorageCreateScreen() (*StorageCreateScreen, error) {
 
 func (s StorageCreateScreen) Init() tea.Cmd {
 	return textinput.Blink
-
 }
 
 func (s *StorageCreateScreen) Update(msg tea.Msg) tea.Cmd {

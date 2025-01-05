@@ -42,51 +42,51 @@ func NewFileStorage(path string, password string, encrypter crypto.Encrypter) (*
 	return store, nil
 }
 
-func (store *FileStorage) Get(_ context.Context, id uint64) (models.Secret, error) {
+func (store *FileStorage) Get(_ context.Context, id uint64) (*models.Secret, error) {
 	store.Lock()
 	defer store.Unlock()
 
 	secret, ok := store.Data[id]
 	secret.ID = id
 	if !ok {
-		return models.Secret{}, entities.ErrSecretNotFound
+		return nil, entities.ErrSecretNotFound
 	}
 
-	return secret, nil
+	return &secret, nil
 }
 
-func (store *FileStorage) GetAll(_ context.Context) ([]models.Secret, error) {
+func (store *FileStorage) GetAll(_ context.Context) ([]*models.Secret, error) {
 	store.Lock()
 	defer store.Unlock()
 
-	arr := make([]models.Secret, len(store.Data))
+	arr := make([]*models.Secret, len(store.Data))
 
 	i := 0
 	for id, secret := range store.Data {
 		secret.ID = id
-		arr[i] = secret
+		arr[i] = &secret
 		i++
 	}
 
 	return arr, nil
 }
 
-func (store *FileStorage) Create(ctx context.Context, secret models.Secret) error {
+func (store *FileStorage) Create(ctx context.Context, secret *models.Secret) error {
 	store.Lock()
 	defer store.Unlock()
 
 	id := store.nextID()
-	store.Data[id] = secret
+	store.Data[id] = *secret
 
 	return store.dump()
 }
 
-func (store *FileStorage) Update(ctx context.Context, secret models.Secret) error {
+func (store *FileStorage) Update(ctx context.Context, secret *models.Secret) error {
 	store.Lock()
 	defer store.Unlock()
 
 	id := secret.ID
-	store.Data[id] = secret
+	store.Data[id] = *secret
 
 	return store.dump()
 }
@@ -153,7 +153,6 @@ func (store *FileStorage) openOrCreateFile(path string) error {
 		}
 
 		// Decrypt
-		log.Printf("decrypting %v with pass:%v\n", store.file.Name(), store.password)
 		decryptedData, err := store.DecryptWithRecover(encryptedData, store.password)
 		if err != nil {
 			switch err {
@@ -197,8 +196,12 @@ func (store *FileStorage) dump() (err error) {
 		return fmt.Errorf("dump(): error serializing Data: %w", err)
 	}
 
+	// Clear any existing data
+	if err := store.file.Truncate(0); err != nil {
+		return fmt.Errorf("dump(): failed to truncate file: %w", err)
+	}
+
 	// Encrypt data
-	log.Printf("encrypting %v with pass:%v\n", store.file.Name(), store.password)
 	encryptedData, err := store.encrypter.Encrypt(data, store.password)
 	if err != nil {
 		return fmt.Errorf("dump(): error encrypting Data: %w", err)
