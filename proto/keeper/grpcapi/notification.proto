@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package proto.keeper.grpcapi;
+
+option go_package = "github.com/ex0rcist/gophkeeper/pkg/keeper/grpcapi";
+
+message SubscribeV1Request {
+  uint64 id = 1;
+}
+
+message SubscribeResponseV1 {
+  uint64 id = 1;
+  bool updated = 2;
+}
+
+service Notification {
+  rpc SubscribeV1(SubscribeV1Request) returns (stream SubscribeResponseV1);
+}

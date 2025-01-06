@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package proto.keeper.grpcapi;
+
+option go_package = "github.com/ex0rcist/gophkeeper/pkg/keeper/grpcapi";
+
+message LoginRequestV1 {
+  string login = 1;
+  string password = 2;
+}
+
+message LoginResponseV1 {
+  string access_token = 1;
+}
+
+message RegisterRequestV1 {
+  string login = 1;
+  string password = 2;
+}
+
+message RegisterResponseV1 {
+  string access_token = 1;
+}
+
+service Users {
+  rpc LoginV1(LoginRequestV1) returns (LoginResponseV1);
+  rpc RegisterV1(RegisterRequestV1) returns (RegisterResponseV1);
+}
