@@ -19,11 +19,11 @@ func NewZapLogger(deps LoggerDependencies) (*zap.SugaredLogger, error) {
 
 	// cfg := zap.NewDevelopmentConfig()
 	cfg := zap.Config{
-		Encoding:         "console",                            // Формат логов (можно использовать "console" или "json")
-		Level:            zap.NewAtomicLevelAt(zap.DebugLevel), // Уровень логирования
-		OutputPaths:      []string{"debug.log"},                // Путь к файлу для логирования
-		ErrorOutputPaths: []string{"stderr"},                   // Куда писать ошибки логгера
-		EncoderConfig:    zap.NewDevelopmentEncoderConfig(),    // Конфигурация форматирования
+		Encoding:         "console",                            // log format ("console" or "json")
+		Level:            zap.NewAtomicLevelAt(zap.DebugLevel), // log level
+		OutputPaths:      []string{"debug.log"},                // log path
+		ErrorOutputPaths: []string{"stderr"},
+		EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
 	}
 
 	cfg.Level = lvl

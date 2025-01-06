@@ -44,7 +44,6 @@ func (s UsersService) RegisterUser(ctx context.Context, login string, password s
 
 	// ensure we have no same login
 	user, err := s.repo.GetUserByLogin(ctx, login)
-	// fmt.Println("wetwetwetwetwetwetwet", err, errors.Is(err, entities.ErrUserNotFound))
 
 	if err != nil && !errors.Is(err, entities.ErrUserNotFound) {
 		return nil, fmt.Errorf("failed to fetch user: %w", err)
@@ -80,11 +79,11 @@ func (s UsersService) LoginUser(ctx context.Context, login string, password stri
 	}
 
 	if err != nil {
-		return user, fmt.Errorf("failed to authenticate user: %w", err)
+		return nil, fmt.Errorf("failed to authenticate user: %w", err)
 	}
 
 	if !utils.ComparePassword(user.Password, password) {
-		return user, entities.ErrBadCredentials
+		return nil, entities.ErrBadCredentials
 	}
 
 	return user, nil
