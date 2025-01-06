@@ -18,7 +18,7 @@ type Config struct {
 }
 
 func New() *Config {
-	viper.SetDefault("server-address", "127.0.0.1:50051")
+	viper.SetDefault("address", "127.0.0.1:50051")
 	viper.SetDefault("verbose", false)
 
 	viper.SetEnvPrefix("GOPH")
@@ -26,7 +26,7 @@ func New() *Config {
 	viper.AutomaticEnv()
 
 	cfg := &Config{
-		ServerAddress: entities.Address(viper.GetString("server-address")),
+		ServerAddress: entities.Address(viper.GetString("address")),
 		Verbose:       viper.GetBool("verbose"),
 		EnableTLS:     true,
 	}

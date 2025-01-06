@@ -52,10 +52,7 @@ keeper: ## build keeper
 
 .PHONY: keeper
 
-# swag init -g ./internal/httpserver/backend.go --output docs/api
-server: ## build server
-	rm -rf $(API_DOCS)
-	
+server: ## build server	
 	go build \
 		-ldflags "\
 			-X 'main.buildVersion=$(SERVER_VERSION)' \
@@ -70,9 +67,9 @@ staticlint: ## build static lint
 	go build -o cmd/$@/$@ cmd/$@/*.go
 .PHONY: staticlint
 
-keys: ## generate keys
+certs: ## generate certs
 	cd cert && ./gen.sh > /dev/null
-.PHONY: keys
+.PHONY: certs
 
 clean: ## remove build artifacts
 	rm -rf cmd/keeper/keeper cmd/server/server cmd/staticlint/staticlint

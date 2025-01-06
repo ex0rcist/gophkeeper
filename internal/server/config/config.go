@@ -28,7 +28,6 @@ type Dependency struct {
 // Create server config from ENV vars and cmd flags
 func New() *Config {
 	viper.SetDefault("address", "127.0.0.1:50051")
-	viper.SetDefault("postgres-dsn", "postgres://cm:cm@localhost:5432/gophkeeper?sslmode=disable")
 
 	viper.SetDefault("verbose", false)
 	viper.SetDefault("log-level", "INFO")

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"os"
 
 	"gophkeeper/internal/server"
 	"gophkeeper/internal/server/config"
@@ -21,6 +23,11 @@ import (
 
 func main() {
 	cfg := config.New()
+
+	if cfg.PostgresDSN == "" {
+		fmt.Println("please provide GOPH_POSTGRES_DSN in ENV")
+		os.Exit(1)
+	}
 
 	err := runApp(cfg)
 	if err != nil {
