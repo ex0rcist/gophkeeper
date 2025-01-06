@@ -30,8 +30,6 @@ type PostgresStorage struct {
 
 // PostgresStorage constructor
 func NewPostgresStorage(deps PostgresStorageDependencies) (*PostgresStorage, error) {
-	fmt.Println("new storage")
-
 	conn := deps.PostgresConn
 	if conn.Err != nil {
 		return nil, conn.Err

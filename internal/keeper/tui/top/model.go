@@ -6,7 +6,6 @@ import (
 	"gophkeeper/internal/keeper/config"
 	"gophkeeper/internal/keeper/tui"
 	"gophkeeper/internal/keeper/tui/styles"
-	"log"
 	"reflect"
 	"strings"
 
@@ -71,7 +70,6 @@ func NewModel(deps ModelDependencies) (*Model, error) {
 }
 
 func (m Model) Init() tea.Cmd {
-	log.Println(m.config)
 	return m.PaneManager.Init()
 }
 

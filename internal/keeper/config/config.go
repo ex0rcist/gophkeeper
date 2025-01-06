@@ -1,7 +1,7 @@
+// Keeper config
 package config
 
 import (
-	"fmt"
 	"gophkeeper/internal/keeper/entities"
 	"strings"
 
@@ -9,13 +9,10 @@ import (
 )
 
 type Config struct {
-	Username      string
-	Password      entities.Secret
-	CAPath        string
-	Verbose       bool
-	LogLevel      string
 	ServerAddress entities.Address
-	DownloadPath  string
+	Verbose       bool
+	EnableTLS     bool
+	LogLevel      string
 	BuildDate     string
 	BuildVersion  string
 }
@@ -29,25 +26,10 @@ func New() *Config {
 	viper.AutomaticEnv()
 
 	cfg := &Config{
-		Username:      viper.GetString("username"),
-		Password:      entities.Secret(viper.GetString("password")),
 		ServerAddress: entities.Address(viper.GetString("server-address")),
-		CAPath:        viper.GetString("ca-path"),
 		Verbose:       viper.GetBool("verbose"),
+		EnableTLS:     true,
 	}
 
 	return cfg
-}
-
-func (c *Config) String() string {
-	var sb strings.Builder
-
-	sb.WriteString("Configuration:\n")
-	sb.WriteString(fmt.Sprintf("\t\tUsername: %s\n", c.Username))
-	sb.WriteString(fmt.Sprintf("\t\tPassword: %s\n", c.Password))
-	sb.WriteString(fmt.Sprintf("\t\tKeeper address: %s\n", c.ServerAddress))
-	sb.WriteString(fmt.Sprintf("\t\tCertificate authority path: %s\n", c.CAPath))
-	sb.WriteString(fmt.Sprintf("\t\tVerbose: %t", c.Verbose))
-
-	return sb.String()
 }

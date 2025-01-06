@@ -15,7 +15,8 @@ type Config struct {
 	Address     string
 	PostgresDSN entities.SecretConnURI
 	LogLevel    string
-	SecretKey   string
+	SecretKey   string // key to sign jwt
+	EnableTLS   bool
 }
 
 // Shortcut to use with dig
@@ -31,8 +32,7 @@ func New() *Config {
 
 	viper.SetDefault("verbose", false)
 	viper.SetDefault("log-level", "INFO")
-
-	viper.SetDefault("secret-key", "123456") // TODO?
+	viper.SetDefault("secret-key", "123456")
 
 	viper.SetEnvPrefix("GOPH")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
@@ -42,6 +42,7 @@ func New() *Config {
 		Address:     viper.GetString("address"),
 		PostgresDSN: entities.SecretConnURI(viper.GetString("postgres-dsn")),
 		LogLevel:    viper.GetString("log-level"),
+		EnableTLS:   true,
 	}
 
 	return cfg

@@ -51,17 +51,9 @@ func NewKeeper(deps KeeperDependencies) (*Keeper, error) {
 func (k Keeper) Start() error {
 	k.tuiApp.Start()
 
-	// app, err := client.NewKeeperClient(cfg)
-	// if err != nil {
-	// 	log.Fatal("failed to initialize app: ", err)
-	// }
-
 	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-
-	// Run notification monitor
-	// go app.Client.Notifications(p)
 
 	select {
 	case sig := <-quit:
@@ -80,26 +72,8 @@ func (k Keeper) Start() error {
 	return nil
 }
 
-// // WithContext injects App into provided context.
-// func (a *App) WithContext(ctx context.Context) context.Context {
-// 	return context.WithValue(ctx, appKeyName, a)
-// }
-
-// FromContext extracts App from provided context.
-// func FromContext(ctx context.Context) (*App, error) {
-// 	if val := ctx.Value(appKeyName); val != nil {
-// 		return val.(*App), nil
-// 	}
-
-// 	return nil, errNotInitialized
-// }
-
 // Shutdown gracefully stops client application.
 func (k Keeper) shutdown() {
-	// if err := a.conn.Close(); err != nil {
-	// 	a.Log.Warn().Err(err).Msg("app - Shutdown - a.conn.Close")
-	// }
-
 	stopped := make(chan struct{})
 	stopCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
@@ -112,7 +86,7 @@ func (k Keeper) shutdown() {
 
 	select {
 	case <-stopped:
-		k.log.Info("server shutdown successful")
+		k.log.Info("keeper shutdown successful")
 
 	case <-stopCtx.Done():
 		k.log.Info("shutdown timeout exceeded")

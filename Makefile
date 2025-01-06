@@ -70,6 +70,10 @@ staticlint: ## build static lint
 	go build -o cmd/$@/$@ cmd/$@/*.go
 .PHONY: staticlint
 
+keys: ## generate keys
+	cd cert && ./gen.sh > /dev/null
+.PHONY: keys
+
 clean: ## remove build artifacts
 	rm -rf cmd/keeper/keeper cmd/server/server cmd/staticlint/staticlint
 .PHONY: clean

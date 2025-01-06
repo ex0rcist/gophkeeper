@@ -45,7 +45,7 @@ func buildDepContainer(cfg *config.Config) *dig.Container {
 	// parsing config twice, using closure instead
 	_ = container.Provide(func() *config.Config { return cfg })
 
-	// Server
+	// Keeper
 	_ = container.Provide(keeper.NewKeeper)
 
 	// GRPC client

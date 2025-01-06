@@ -2,7 +2,10 @@ package grpc
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"gophkeeper/cert"
 	"gophkeeper/internal/keeper/api"
 	"gophkeeper/internal/keeper/api/grpc/interceptor"
 	"gophkeeper/internal/keeper/config"
@@ -10,6 +13,7 @@ import (
 	"gophkeeper/pkg/constants"
 	"gophkeeper/pkg/convert"
 	"gophkeeper/pkg/models"
+	"log"
 	"math"
 	"math/rand/v2"
 	"sync"
@@ -17,6 +21,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -61,41 +66,20 @@ func NewGRPCClient(cfg *config.Config) (*GRPCClient, error) {
 		),
 	)
 
-	// Stream interceptor
-	// opts = append(
-	// 	opts,
-	// 	grpc.WithStreamInterceptor(interceptor.AddAuthStream(&newClient.accessToken, newClient.clientID)),
-	// )
+	// TLS
+	if cfg.EnableTLS {
+		tlsCredential, err := loadTLSConfig("ca-cert.pem", "client-cert.pem", "client-key.pem")
+		if err != nil {
+			return nil, fmt.Errorf("failed to load TLS config: %w", err)
+		}
 
-	// // TLS
-	// if cfg.EnableTLS {
-	// 	tlsCredential, err := loadTLSConfig("ca-cert.pem", "client-cert.pem", "client-key.pem")
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("failed to load TLS config: %w", err)
-	// 	}
-
-	// 	opts = append(
-	// 		opts,
-	// 		grpc.WithTransportCredentials(
-	// 			tlsCredential,
-	// 		),
-	// 	)
-	// } else {
-	// 	opts = append(
-	// 		opts,
-	// 		grpc.WithTransportCredentials(
-	// 			insecure.NewCredentials(),
-	// 		),
-	// 	)
-	// }
-
-	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		opts = append(opts, grpc.WithTransportCredentials(tlsCredential))
+	} else {
+		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	}
 
 	// create gRPC client
-	c, err := grpc.NewClient(
-		string(cfg.ServerAddress),
-		opts...,
-	)
+	c, err := grpc.NewClient(string(cfg.ServerAddress), opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create gRPC client: %w", err)
 	}
@@ -107,46 +91,6 @@ func NewGRPCClient(cfg *config.Config) (*GRPCClient, error) {
 
 	return &newClient, nil
 }
-
-// func loadTLSConfig(caCertFile, clientCertFile, clientKeyFile string) (credentials.TransportCredentials, error) {
-// 	// Read CA cert
-// 	caPem, err := cert.Cert.ReadFile(caCertFile)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to read CA cert: %w", err)
-// 	}
-
-// 	// Read client cert
-// 	clientCertPEM, err := cert.Cert.ReadFile(clientCertFile)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to read client cert: %w", err)
-// 	}
-
-// 	// Read client key
-// 	clientKeyPEM, err := cert.Cert.ReadFile(clientKeyFile)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to read client key: %w", err)
-// 	}
-
-// 	// Create key pair
-// 	clientCert, err := tls.X509KeyPair(clientCertPEM, clientKeyPEM)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to load x509 key pair: %w", err)
-// 	}
-
-// 	// Create cert pool and append CA's cert
-// 	certPool := x509.NewCertPool()
-// 	if !certPool.AppendCertsFromPEM(caPem) {
-// 		return nil, fmt.Errorf("failed to append CA cert to cert pool: %w", err)
-// 	}
-
-// 	// Create config
-// 	config := &tls.Config{
-// 		Certificates: []tls.Certificate{clientCert},
-// 		RootCAs:      certPool,
-// 	}
-
-// 	return credentials.NewTLS(config), nil
-// }
 
 func (c *GRPCClient) Login(ctx context.Context, login string, password string) (string, error) {
 	req := &pb.LoginRequestV1{
@@ -266,6 +210,7 @@ func parseError(err error) error {
 
 	switch st.Code() {
 	case codes.Unavailable:
+		log.Println(err)
 		return entities.ErrServerUnavailable
 	case codes.Unauthenticated:
 		return entities.ErrUnauthenticated
@@ -274,4 +219,44 @@ func parseError(err error) error {
 	default:
 		return err
 	}
+}
+
+func loadTLSConfig(caCertFile, clientCertFile, clientKeyFile string) (credentials.TransportCredentials, error) {
+	// Read CA cert
+	caPem, err := cert.Cert.ReadFile(caCertFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read CA cert: %w", err)
+	}
+
+	// Read client cert
+	clientCertPEM, err := cert.Cert.ReadFile(clientCertFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read client cert: %w", err)
+	}
+
+	// Read client key
+	clientKeyPEM, err := cert.Cert.ReadFile(clientKeyFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read client key: %w", err)
+	}
+
+	// Create key pair
+	clientCert, err := tls.X509KeyPair(clientCertPEM, clientKeyPEM)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load x509 key pair: %w", err)
+	}
+
+	// Create cert pool and append CA's cert
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM(caPem) {
+		return nil, fmt.Errorf("failed to append CA cert to cert pool: %w", err)
+	}
+
+	// Create config
+	config := &tls.Config{
+		Certificates: []tls.Certificate{clientCert},
+		RootCAs:      certPool,
+	}
+
+	return credentials.NewTLS(config), nil
 }

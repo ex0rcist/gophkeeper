@@ -30,3 +30,6 @@ vendor/
 
 *.prof
 
+# Certs
+cert/*.pem
+cert/*.srl
