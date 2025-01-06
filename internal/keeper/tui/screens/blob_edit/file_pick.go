@@ -62,7 +62,7 @@ func (s *FilePickScreen) Update(msg tea.Msg) tea.Cmd {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "b":
-			tui.SetBodyPane(tui.BlobEditScreen, tui.WithStorage(s.storage), tui.WithSecret(s.secret))
+			cmds = append(cmds, tui.SetBodyPane(tui.BlobEditScreen, tui.WithStorage(s.storage), tui.WithSecret(s.secret)))
 		}
 	case tea.WindowSizeMsg:
 		s.filePicker.Height = msg.Height - styles.FilepickerBotPadding

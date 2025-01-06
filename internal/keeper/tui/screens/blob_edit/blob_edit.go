@@ -70,7 +70,7 @@ func NewBlobEditScreen(secret *models.Secret, strg storage.Storage) *BlobEditScr
 			return tui.SetBodyPane(tui.StorageBrowseScreen, tui.WithStorage(m.storage))
 		}
 
-		return tui.SetBodyPane(tui.FilePickScreen, tui.WithStorage(m.storage), tui.WithCallback(f))
+		return tui.SetBodyPane(tui.FilePickScreen, tui.WithStorage(m.storage), tui.WithCallback(f), tui.WithSecret(secret))
 	}})
 
 	buttons = append(buttons, components.Button{Title: "[ Back ]", Cmd: func() tea.Cmd {
