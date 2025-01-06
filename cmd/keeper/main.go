@@ -11,7 +11,6 @@ import (
 	"log"
 
 	"go.uber.org/dig"
-	//_ "github.com/charmbracelet/lipgloss"
 )
 
 var (
@@ -22,6 +21,8 @@ var (
 
 func main() {
 	cfg := config.New()
+	cfg.BuildDate = buildDate
+	cfg.BuildVersion = buildVersion
 
 	err := runApp(cfg)
 	if err != nil {
@@ -42,23 +43,23 @@ func buildDepContainer(cfg *config.Config) *dig.Container {
 
 	// NB: could use .Provide(config.New), but try to avoid
 	// parsing config twice, using closure instead
-	container.Provide(func() *config.Config { return cfg })
+	_ = container.Provide(func() *config.Config { return cfg })
 
 	// Server
-	container.Provide(keeper.NewKeeper)
+	_ = container.Provide(keeper.NewKeeper)
 
 	// GRPC client
-	container.Provide(grpc.NewGRPCClient, dig.As(new(api.IApiClient)))
+	_ = container.Provide(grpc.NewGRPCClient, dig.As(new(api.IApiClient)))
 
 	// TUI app
-	container.Provide(app.NewApp)
+	_ = container.Provide(app.NewApp)
 
 	// Top app model
-	container.Provide(top.NewModel)
+	_ = container.Provide(top.NewModel)
 
 	// Logging
-	container.Provide(utils.NewZapLogger)
-	container.Provide(func(cfg *config.Config) utils.ZapLogLevel { return utils.ZapLogLevel(cfg.LogLevel) })
+	_ = container.Provide(utils.NewZapLogger)
+	_ = container.Provide(func(cfg *config.Config) utils.ZapLogLevel { return utils.ZapLogLevel(cfg.LogLevel) })
 
 	return container
 }

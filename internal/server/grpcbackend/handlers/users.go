@@ -8,7 +8,6 @@ import (
 	"gophkeeper/internal/server/entities"
 	"gophkeeper/internal/server/service"
 	"gophkeeper/pkg/constants"
-	"gophkeeper/pkg/proto/keeper/grpcapi"
 	"strconv"
 	"time"
 
@@ -23,7 +22,7 @@ import (
 const tokenLifetime = time.Hour * 24
 
 type UsersServer struct {
-	grpcapi.UnimplementedUsersServer
+	pb.UnimplementedUsersServer
 
 	config       *config.Config
 	usersManager service.UsersManager

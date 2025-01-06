@@ -60,8 +60,12 @@ func (s *StorageBrowseScreen) Update(msg tea.Msg) tea.Cmd {
 
 	switch msg := msg.(type) {
 	case savePathMsg: // msg from prompt for blob-secret copy-hotkey
-		os.WriteFile(msg.path, msg.secret.Blob.FileBytes, 0644)
-		cmds = append(cmds, infoCmd("file saved successfully"))
+		err := os.WriteFile(msg.path, msg.secret.Blob.FileBytes, 0644)
+		if err != nil {
+			cmds = append(cmds, tui.ReportError(err))
+		} else {
+			cmds = append(cmds, infoCmd("file saved successfully"))
+		}
 	case tea.WindowSizeMsg:
 		s.table.SetWidth(min(msg.Width, s.colsWidth()))
 		s.table.SetHeight(msg.Height - tableBorderSize)
@@ -94,7 +98,7 @@ func (s StorageBrowseScreen) View() string {
 	var b strings.Builder
 
 	b.WriteString(fmt.Sprintf("Operating storage %s\n", styles.Highlighted.Render(s.storage.String())))
-	b.WriteString(fmt.Sprintf("Use ↑↓ to navigate, (a)dd, (e)dit, (d)elete, (c)opy\n"))
+	b.WriteString("Use ↑↓ to navigate, (a)dd, (e)dit, (d)elete, (c)opy\n")
 	b.WriteString(tableStyle.Render(s.table.View()))
 
 	return screenStyle.Render(b.String())

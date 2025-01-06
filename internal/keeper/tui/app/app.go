@@ -15,7 +15,7 @@ import (
 
 const logFilePath = "debug.log"
 
-var ExitCmdErr = errors.New("exit command")
+var ErrExitCmd = errors.New("exit command")
 
 // App describes TUI app
 type App struct {
@@ -47,36 +47,26 @@ func NewApp(deps AppDependencies) *App {
 }
 
 func (a App) Start() {
-	var err error
-
 	a.setupLogging()
 
 	p := tea.NewProgram(a.topModel, tea.WithAltScreen())
 
-	// ch, unsub := setupSubscriptions()
-	// defer unsub()
-
-	// Relay events to model in background
-	// go func() {
-	// 	for msg := range ch {
-	// 		p.Send(msg)
-	// 	}
-	// }()
-
 	// Run tea program
 	go func() {
-		_, err = p.Run()
+		_, err := p.Run()
 		if err != nil {
 			log.Fatal("failed to run bubbletea app: ", err)
 		}
 
-		a.notify <- ExitCmdErr
+		a.notify <- ErrExitCmd
 	}()
-
 }
 
 func (a App) Shutdown() {
-	a.logFile.Close()
+	err := a.logFile.Close()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (a App) Notify() chan error {

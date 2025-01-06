@@ -105,18 +105,16 @@ func (store *FileStorage) String() string {
 }
 
 func (store *FileStorage) Close(_ context.Context) error {
-	var err error
-
-	err = store.dump()
-	if err != nil {
-		return err
-	}
-
 	defer func() {
-		if err := store.file.Close(); err != nil {
+		if serr := store.file.Close(); serr != nil {
 			log.Fatal("dump(): failed to close file: %w")
 		}
 	}()
+
+	err := store.dump()
+	if err != nil {
+		return err
+	}
 
 	return err
 }
@@ -197,7 +195,7 @@ func (store *FileStorage) dump() (err error) {
 	}
 
 	// Clear any existing data
-	if err := store.file.Truncate(0); err != nil {
+	if err = store.file.Truncate(0); err != nil {
 		return fmt.Errorf("dump(): failed to truncate file: %w", err)
 	}
 
@@ -208,12 +206,12 @@ func (store *FileStorage) dump() (err error) {
 	}
 
 	// Dump to file
-	if _, err := store.file.Write(encryptedData); err != nil {
+	if _, err = store.file.Write(encryptedData); err != nil {
 		return fmt.Errorf("dump(): error writing encrypted Data to file: %w", err)
 	}
 
 	// Reset pointer
-	if _, err := store.file.Seek(0, io.SeekStart); err != nil {
+	if _, err = store.file.Seek(0, io.SeekStart); err != nil {
 		return fmt.Errorf("dump(): failed to reset file pointer: %w", err)
 	}
 

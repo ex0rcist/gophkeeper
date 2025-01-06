@@ -7,7 +7,6 @@ import (
 	"gophkeeper/internal/server/service"
 	"gophkeeper/pkg/constants"
 	"gophkeeper/pkg/convert"
-	"gophkeeper/pkg/proto/keeper/grpcapi"
 
 	"go.uber.org/dig"
 	"google.golang.org/grpc/codes"
@@ -18,7 +17,7 @@ import (
 )
 
 type SecretsServer struct {
-	grpcapi.UnimplementedSecretsServer
+	pb.UnimplementedSecretsServer
 
 	secretsManager service.SecretsManager
 }

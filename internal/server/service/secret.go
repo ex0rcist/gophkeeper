@@ -84,9 +84,7 @@ func (s SecretsService) CreateSecret(ctx context.Context, secret *models.Secret)
 
 // Try update secret
 func (s SecretsService) UpdateSecret(ctx context.Context, secret *models.Secret) (*models.Secret, error) {
-	var err error
-
-	err = s.repo.Update(ctx, secret)
+	err := s.repo.Update(ctx, secret)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, entities.ErrorSecretNotFound(secret.ID)
 	}
@@ -100,8 +98,6 @@ func (s SecretsService) UpdateSecret(ctx context.Context, secret *models.Secret)
 
 // Delete secret
 func (s SecretsService) DeleteSecret(ctx context.Context, secretID uint64, userID uint64) error {
-	var err error
-
-	err = s.repo.Delete(ctx, secretID, userID)
+	err := s.repo.Delete(ctx, secretID, userID)
 	return err
 }

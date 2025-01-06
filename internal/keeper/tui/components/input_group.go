@@ -120,8 +120,8 @@ func (m *InputGroup) updateInputs(msg tea.Msg) tea.Cmd {
 func (m InputGroup) View() string {
 	var (
 		b       strings.Builder
-		style   lipgloss.Style = styles.Blurred
-		padding int            // num spaces to pad
+		style   lipgloss.Style
+		padding int // num spaces to pad
 	)
 
 	// Calc max label width

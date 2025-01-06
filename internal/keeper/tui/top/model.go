@@ -6,6 +6,7 @@ import (
 	"gophkeeper/internal/keeper/config"
 	"gophkeeper/internal/keeper/tui"
 	"gophkeeper/internal/keeper/tui/styles"
+	"log"
 	"reflect"
 	"strings"
 
@@ -23,10 +24,16 @@ const (
 	promptMode             // prompt is visible
 )
 
+var (
+	helpStyle    = styles.Padded.Background(styles.Grey).Foreground(styles.White)
+	versionStyle = styles.Padded.Background(styles.DarkGrey).Foreground(styles.White)
+)
+
 // Top-level tea model
 type Model struct {
 	*tui.PaneManager
 
+	config *config.Config
 	client api.IApiClient
 	makers map[tui.Screen]tui.ScreenMaker
 	prompt *tui.Prompt
@@ -37,6 +44,8 @@ type Model struct {
 	showHelp bool
 	err      error
 	info     string
+
+	helpWidget, versionWidget string
 }
 
 type ModelDependencies struct {
@@ -47,29 +56,27 @@ type ModelDependencies struct {
 }
 
 func NewModel(deps ModelDependencies) (*Model, error) {
-	// spinner := spinner.New(spinner.WithSpinner(spinner.Line))
-	// makers := makeMakers(cfg, app, &spinner, helpers)
-
 	makers := prepareMakers(deps)
 
 	m := Model{
-		client:      deps.Client,
-		PaneManager: tui.NewPaneManager(makers),
-		makers:      makers,
+		config:        deps.Config,
+		client:        deps.Client,
+		PaneManager:   tui.NewPaneManager(makers),
+		makers:        makers,
+		helpWidget:    helpStyle.Render(fmt.Sprintf("%s for help", tui.GlobalKeys.Help.Help().Key)),
+		versionWidget: versionStyle.Render(fmt.Sprintf("%s (%s)", deps.Config.BuildVersion, deps.Config.BuildDate)),
 	}
 
 	return &m, nil
 }
 
 func (m Model) Init() tea.Cmd {
+	log.Println(m.config)
 	return m.PaneManager.Init()
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var (
-		cmd  tea.Cmd
-		cmds []tea.Cmd
-	)
+	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
 	case tui.PromptMsg:
@@ -78,7 +85,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.prompt, blink = tui.NewPrompt(msg)
 
 		// Tell panes to resize themselves
-		cmd = m.PaneManager.Update(tea.WindowSizeMsg{
+		cmd := m.PaneManager.Update(tea.WindowSizeMsg{
 			Height: m.viewHeight(),
 			Width:  m.viewWidth(),
 		})
@@ -134,6 +141,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		})
 
 	case cursor.BlinkMsg:
+		var cmd tea.Cmd
 		if m.mode == promptMode {
 			cmd = m.prompt.HandleBlink(msg)
 		} else {
@@ -169,7 +177,7 @@ func (m Model) View() string {
 	}
 
 	// Compose footer
-	footer := helpWidget
+	footer := m.helpWidget
 	if m.err != nil {
 		footer += styles.Regular.Padding(0, 1).
 			Background(styles.Red).
@@ -189,7 +197,7 @@ func (m Model) View() string {
 			Width(m.availableFooterMsgWidth()).
 			Render(m.info)
 	}
-	footer += versionWidget
+	footer += m.versionWidget
 
 	// Add footer
 	components = append(components, styles.Regular.
@@ -201,13 +209,10 @@ func (m Model) View() string {
 	return strings.Join(components, "\n")
 }
 
-var (
-	helpWidget    = styles.Padded.Background(styles.Grey).Foreground(styles.White).Render(fmt.Sprintf("%s for help", tui.GlobalKeys.Help.Help().Key))
-	versionWidget = styles.Padded.Background(styles.DarkGrey).Foreground(styles.White).Render("0.0.1 (21.12.24)")
-)
+var ()
 
 func (m Model) availableFooterMsgWidth() int {
-	return max(0, m.width-lipgloss.Width(helpWidget)-lipgloss.Width(versionWidget))
+	return max(0, m.width-lipgloss.Width(m.helpWidget)-lipgloss.Width(m.versionWidget))
 }
 
 func (m Model) viewHeight() int {
@@ -237,7 +242,7 @@ func (m Model) help() string {
 	case promptMode:
 		bindings = append(bindings, m.prompt.HelpBindings()...)
 	default:
-		bindings = append(bindings, m.PaneManager.HelpBindings()...)
+		bindings = append(bindings, m.HelpBindings()...)
 	}
 
 	bindings = append(bindings, keyMapToSlice(tui.GlobalKeys)...)

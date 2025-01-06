@@ -18,8 +18,8 @@ import (
 )
 
 var (
-	errTitleEmpty    = errors.New("Please enter title")
-	errMetadataEmpty = errors.New("Please enter metadata")
+	errTitleEmpty    = errors.New("please enter title")
+	errMetadataEmpty = errors.New("please enter metadata")
 )
 
 const (
@@ -56,8 +56,7 @@ func NewBlobEditScreen(secret *models.Secret, strg storage.Storage) *BlobEditScr
 			return tui.ReportError(err)
 		}
 
-		var f tui.NavigationCallback
-		f = func(args ...any) tea.Cmd {
+		f := func(args ...any) tea.Cmd {
 			str, ok := args[0].(string)
 			if !ok {
 				return tui.ReportError(fmt.Errorf("error opening file"))

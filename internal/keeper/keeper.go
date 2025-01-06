@@ -67,7 +67,7 @@ func (k Keeper) Start() error {
 	case sig := <-quit:
 		k.log.Info("interrupt: signal " + sig.String())
 	case err := <-k.tuiApp.Notify():
-		if errors.Is(err, app.ExitCmdErr) {
+		if errors.Is(err, app.ErrExitCmd) {
 			quit <- syscall.SIGINT
 			break
 		}

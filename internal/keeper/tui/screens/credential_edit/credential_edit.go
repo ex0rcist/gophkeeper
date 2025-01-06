@@ -16,10 +16,10 @@ import (
 )
 
 var (
-	errMetadataEmpty = errors.New("Please enter metadata")
-	errLoginEmpty    = errors.New("Please enter login")
-	errPasswordEmpty = errors.New("Please enter password")
-	errTitleEmpty    = errors.New("Please enter title")
+	errMetadataEmpty = errors.New("please enter metadata")
+	errLoginEmpty    = errors.New("please enter login")
+	errPasswordEmpty = errors.New("please enter password")
+	errTitleEmpty    = errors.New("please enter title")
 )
 
 const (

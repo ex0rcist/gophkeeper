@@ -43,33 +43,33 @@ func buildDepContainer(cfg *config.Config) *dig.Container {
 
 	// NB: could use .Provide(config.New), but try to avoid
 	// parsing config twice, using closure instead
-	container.Provide(func() *config.Config { return cfg })
+	_ = container.Provide(func() *config.Config { return cfg })
 
 	// Server
-	container.Provide(server.New)
+	_ = container.Provide(server.New)
 
 	// Logging
-	container.Provide(utils.NewZapLogger)
-	container.Provide(func(cfg *config.Config) utils.ZapLogLevel { return utils.ZapLogLevel(cfg.LogLevel) })
+	_ = container.Provide(utils.NewZapLogger)
+	_ = container.Provide(func(cfg *config.Config) utils.ZapLogLevel { return utils.ZapLogLevel(cfg.LogLevel) })
 
 	// Routing
-	container.Provide(chi.NewRouter, dig.As(new(chi.Router)))
+	_ = container.Provide(chi.NewRouter, dig.As(new(chi.Router)))
 
 	// HTTP server and backend
-	container.Provide(grpcbackend.NewGRPCServer)
-	container.Provide(grpcbackend.NewBackend)
-	container.Provide(grpcbackend.NewGRPCServerAddress)
+	_ = container.Provide(grpcbackend.NewGRPCServer)
+	_ = container.Provide(grpcbackend.NewBackend)
+	_ = container.Provide(grpcbackend.NewGRPCServerAddress)
 
 	// HTTP handlers
-	container.Provide(grpchandlers.NewUsersServer)
-	container.Provide(grpchandlers.NewHealthServer)
-	container.Provide(grpchandlers.NewSecretsServer)
-	//container.Provide(grpchandlers.NewNotificationServer)
+	_ = container.Provide(grpchandlers.NewUsersServer)
+	_ = container.Provide(grpchandlers.NewHealthServer)
+	_ = container.Provide(grpchandlers.NewSecretsServer)
+	// TODO: notification server
 
 	// services
-	container.Provide(service.NewHealthService, dig.As(new(service.HealthManager)))
-	container.Provide(service.NewSecretsService, dig.As(new(service.SecretsManager)))
-	container.Provide(service.NewUsersService, dig.As(new(service.UsersManager)))
+	_ = container.Provide(service.NewHealthService, dig.As(new(service.HealthManager)))
+	_ = container.Provide(service.NewSecretsService, dig.As(new(service.SecretsManager)))
+	_ = container.Provide(service.NewUsersService, dig.As(new(service.UsersManager)))
 
 	return container
 }
@@ -78,13 +78,13 @@ func addAppSpecificDependencies(container *dig.Container, cfg *config.Config) *d
 	switch {
 	case len(cfg.PostgresDSN) > 0:
 		// Postgres storage
-		container.Provide(pgStorage.NewPostgresDSN)
-		container.Provide(pgStorage.NewPostgresConn)
-		container.Provide(pgStorage.NewPostgresStorage, dig.As(new(storage.ServerStorage)))
+		_ = container.Provide(pgStorage.NewPostgresDSN)
+		_ = container.Provide(pgStorage.NewPostgresConn)
+		_ = container.Provide(pgStorage.NewPostgresStorage, dig.As(new(storage.ServerStorage)))
 
 		// Postgres repos
-		container.Provide(pgRepo.NewUsersRepository, dig.As(new(repository.UsersRepository)))
-		container.Provide(pgRepo.NewSecretsRepository, dig.As(new(repository.SecretsRepository)))
+		_ = container.Provide(pgRepo.NewUsersRepository, dig.As(new(repository.UsersRepository)))
+		_ = container.Provide(pgRepo.NewSecretsRepository, dig.As(new(repository.SecretsRepository)))
 	}
 
 	return container

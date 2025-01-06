@@ -16,9 +16,9 @@ import (
 )
 
 var (
-	errMetadataEmpty = errors.New("Please enter metadata")
-	errContentEmpty  = errors.New("Please enter content")
-	errTitleEmpty    = errors.New("Please enter title")
+	errMetadataEmpty = errors.New("please enter metadata")
+	errContentEmpty  = errors.New("please enter content")
+	errTitleEmpty    = errors.New("please enter title")
 )
 
 const (

@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	errLoginEmpty    = errors.New("Please enter login")
-	errPasswordEmpty = errors.New("Please enter password")
+	errLoginEmpty    = errors.New("please enter login")
+	errPasswordEmpty = errors.New("please enter password")
 )
 
 const (
@@ -39,7 +39,7 @@ type LoginScreen struct {
 	inputGroup components.InputGroup
 }
 
-func (m LoginScreen) Make(msg tui.NavigationMsg, width, height int) (tui.Teable, error) {
+func (s LoginScreen) Make(msg tui.NavigationMsg, width, height int) (tui.Teable, error) {
 	return NewLoginScreen(msg.Client), nil
 }
 

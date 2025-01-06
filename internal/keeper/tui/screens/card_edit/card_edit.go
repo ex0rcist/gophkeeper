@@ -2,7 +2,6 @@ package cardedit
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"gophkeeper/internal/keeper/storage"
 	"gophkeeper/internal/keeper/tui"
@@ -18,7 +17,7 @@ import (
 )
 
 var (
-	errFieldEmpty = func(label string) error { return errors.New(fmt.Sprintf("Please enter %s", label)) }
+	errFieldEmpty = func(label string) error { return fmt.Errorf("please enter %s", label) }
 )
 
 const (

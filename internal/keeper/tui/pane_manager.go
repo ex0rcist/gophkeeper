@@ -32,7 +32,7 @@ const (
 )
 
 var (
-	NoMakerError = errors.New("No maker for requested screen")
+	ErrNoMaker = errors.New("no maker for requested screen")
 )
 
 type Position int
@@ -66,14 +66,14 @@ func NewPaneManager(makers map[Screen]ScreenMaker) *PaneManager {
 	return p
 }
 
-func (p *PaneManager) Init() tea.Cmd {
+func (pm *PaneManager) Init() tea.Cmd {
 	return tea.Batch(
 		SetLeftPane(MenuScreen),
 		SetBodyPane(WelcomeScreen),
 	)
 }
 
-func (p *PaneManager) Update(msg tea.Msg) tea.Cmd {
+func (pm *PaneManager) Update(msg tea.Msg) tea.Cmd {
 	var (
 		cmds []tea.Cmd
 	)
@@ -82,22 +82,22 @@ func (p *PaneManager) Update(msg tea.Msg) tea.Cmd {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, GlobalKeys.Tab):
-			p.cycleFocusedPane()
+			pm.cycleFocusedPane()
 		default:
 			// Send remaining keys to focused pane
-			cmds = append(cmds, p.updateModel(p.focused, msg))
+			cmds = append(cmds, pm.updateModel(pm.focused, msg))
 		}
 
 	case tea.WindowSizeMsg:
-		p.width = msg.Width
-		p.height = msg.Height
+		pm.width = msg.Width
+		pm.height = msg.Height
 
-		p.updateChildSizes()
+		pm.updateChildSizes()
 	case NavigationMsg:
-		cmds = append(cmds, p.setPane(msg))
+		cmds = append(cmds, pm.setPane(msg))
 	default:
 		// Send remaining message types to cached panes. // ?????
-		cmds = p.cache.UpdateAll(msg)
+		cmds = pm.cache.UpdateAll(msg)
 	}
 
 	return tea.Batch(cmds...)
@@ -133,8 +133,9 @@ func (pm *PaneManager) updateChildSizes() {
 }
 
 func (pm *PaneManager) updateModel(position Position, msg tea.Msg) tea.Cmd {
-	if pane, ok := pm.panes[position]; ok {
-		return pane.model.Update(msg)
+
+	if p, ok := pm.panes[position]; ok {
+		return p.model.Update(msg)
 	}
 
 	return nil
@@ -145,7 +146,7 @@ func (pm *PaneManager) setPane(msg NavigationMsg) tea.Cmd {
 		cmd tea.Cmd
 	)
 
-	if pane, ok := pm.panes[msg.Position]; ok && pane.page == msg.Page {
+	if p, ok := pm.panes[msg.Position]; ok && p.page == msg.Page {
 		// Pane is already showing requested page, so just bring it into focus.
 		if !msg.DisableFocus {
 			pm.focusPane(msg.Position)
@@ -154,12 +155,15 @@ func (pm *PaneManager) setPane(msg NavigationMsg) tea.Cmd {
 		return nil
 	}
 
+	// TODO: cache invalidation
+	useCache := true
+
 	model := pm.cache.Get(msg.Page)
-	if 1 == 1 || model == nil { // TODO!!!
+	if useCache || model == nil {
 
 		maker, ok := pm.makers[msg.Page.Screen]
 		if !ok {
-			return ReportError(NoMakerError)
+			return ReportError(ErrNoMaker)
 		}
 
 		var err error
@@ -212,21 +216,21 @@ func (pm *PaneManager) View() string {
 	)
 }
 
-func (m *PaneManager) renderPane(position Position) string {
-	if _, ok := m.panes[position]; !ok {
+func (pm *PaneManager) renderPane(position Position) string {
+	if _, ok := pm.panes[position]; !ok {
 		return ""
 	}
 
 	// Width and Height does not include border size, so substract it
 	paneStyle := styles.InactiveBorder.
-		Width(m.paneWidth(position) - borderSize).
-		Height(m.paneHeight(position) - borderSize)
+		Width(pm.paneWidth(position) - borderSize).
+		Height(pm.paneHeight(position) - borderSize)
 
-	if position == m.focused {
+	if position == pm.focused {
 		paneStyle = styles.ActiveBorder.Inherit(paneStyle)
 	}
 
-	model := m.panes[position].model
+	model := pm.panes[position].model
 	return paneStyle.Render(model.View())
 
 }

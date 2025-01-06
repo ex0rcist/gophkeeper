@@ -34,8 +34,6 @@ func (d secretItemDelegate) Render(w io.Writer, m list.Model, index int, listIte
 		return
 	}
 
-	str := fmt.Sprintf("%s", i.name)
-
 	fn := itemStyle.Render
 	if index == m.Index() {
 		fn = func(s ...string) string {
@@ -43,5 +41,5 @@ func (d secretItemDelegate) Render(w io.Writer, m list.Model, index int, listIte
 		}
 	}
 
-	fmt.Fprint(w, fn(str))
+	_, _ = fmt.Fprint(w, fn(string(i.name)))
 }

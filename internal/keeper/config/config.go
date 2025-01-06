@@ -16,6 +16,8 @@ type Config struct {
 	LogLevel      string
 	ServerAddress entities.Address
 	DownloadPath  string
+	BuildDate     string
+	BuildVersion  string
 }
 
 func New() *Config {

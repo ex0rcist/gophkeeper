@@ -1,14 +1,21 @@
 API_DOCS = docs/api
 
-KEEPER_VERSION ?= 0.1.0
-SERVER_VERSION ?= 0.1.0
+KEEPER_VERSION ?= 1.0.0
+SERVER_VERSION ?= 1.0.0
 
-BUILD_DATE ?= $(shell date +%F\ %H:%M:%S)
+BUILD_DATE ?= $(shell date +%d.%m.%y)
 BUILD_COMMIT ?= $(shell git rev-parse --short HEAD)
+BUILD_DIR = build
 
 PROTO_SRC = proto/keeper/grpcapi
 PROTO_FILES = users notification secrets health
 PROTO_DST = pkg/$(PROTO_SRC)
+
+PLATFORMS = \
+    linux/amd64 \
+    windows/amd64 \
+    darwin/amd64 \
+    darwin/arm64
 
 help: ## display this help screen
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -26,6 +33,23 @@ keeper: ## build keeper
 		" \
 		-o cmd/$@/$@ \
 		cmd/$@/*.go
+
+	@for platform in $(PLATFORMS); do \
+		OS=$$(echo $$platform | cut -d'/' -f1); \
+		ARCH=$$(echo $$platform | cut -d'/' -f2); \
+		OUTPUT=$(BUILD_DIR)/keeper-$$OS-$$ARCH; \
+		if [ "$$OS" = "windows" ]; then OUTPUT=$$OUTPUT.exe; fi; \
+		echo "Building for $$OS/$$ARCH..."; \
+		GOOS=$$OS GOARCH=$$ARCH go build \
+			-ldflags "\
+				-X 'main.buildVersion=$(KEEPER_VERSION)' \
+				-X 'main.buildDate=$(BUILD_DATE)' \
+				-X 'main.buildCommit=$(BUILD_COMMIT)' \
+			" \
+			-o $$OUTPUT \
+			cmd/keeper/*.go || exit 1; \
+	done
+
 .PHONY: keeper
 
 # swag init -g ./internal/httpserver/backend.go --output docs/api
@@ -56,12 +80,6 @@ unit-tests: ## run unit tests
 	@go tool cover -html=coverage.out -o coverage.html
 	@go tool cover -func=coverage.out
 .PHONY: unit-tests
-
-# godoc: ### show public packages documentation using godoc
-# 	@echo "Project documentation is available at:"
-# 	@echo "http://127.0.0.1:3000/pkg/github.com/ex0rcist/metflix/pkg/\n"
-# 	@godoc -http=:3000 -play
-# .PHONY: godoc
 
 proto: $(PROTO_FILES) ## generate gRPC protobuf bindings
 .PHONY: proto
