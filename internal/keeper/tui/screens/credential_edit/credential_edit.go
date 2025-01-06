@@ -89,15 +89,6 @@ func (s *CredentialEditScreen) Update(msg tea.Msg) tea.Cmd {
 		cmds []tea.Cmd
 	)
 
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "enter":
-
-		}
-	}
-
-	// Handle input group. TODO: fix blink
 	ig, cmd := s.inputGroup.Update(msg)
 	s.inputGroup = ig.(components.InputGroup)
 

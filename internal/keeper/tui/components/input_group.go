@@ -157,7 +157,7 @@ func (m InputGroup) View() string {
 		}
 
 		b.WriteString(fmt.Sprintf("%s%s\n",
-			strings.Repeat(" ", buttonPadding), // Выравниваем кнопки
+			strings.Repeat(" ", buttonPadding),
 			style.Render(title),
 		))
 	}

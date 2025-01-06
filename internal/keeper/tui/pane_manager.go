@@ -46,7 +46,7 @@ const borderSize = 2
 
 type PaneManager struct {
 	makers        map[Screen]ScreenMaker
-	cache         *Cache            // cache of previously made models   ????????
+	cache         *Cache            // cache of previously made models
 	focused       Position          // the position of the currently focused pane
 	panes         map[Position]pane // panes tracks currently visible panes
 	width, height int               // total width and height of the terminal space available to panes.
@@ -96,7 +96,7 @@ func (pm *PaneManager) Update(msg tea.Msg) tea.Cmd {
 	case NavigationMsg:
 		cmds = append(cmds, pm.setPane(msg))
 	default:
-		// Send remaining message types to cached panes. // ?????
+		// Send remaining message types to cached panes
 		cmds = pm.cache.UpdateAll(msg)
 	}
 
@@ -195,7 +195,7 @@ func (pm *PaneManager) focusPane(position Position) {
 func (pm *PaneManager) paneWidth(position Position) int {
 	switch position {
 	case LeftPane:
-		return defaultLeftPaneWidth
+		return DefaultLeftPaneWidth
 	case BodyPane:
 		return pm.width - pm.paneWidth(LeftPane)
 	default:

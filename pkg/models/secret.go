@@ -165,26 +165,3 @@ func (s *Secret) UnmarshalJSON(src []byte) error {
 
 	return nil
 }
-
-// Indicates status of secret for particular client: new, updated or read
-// type SecretPreviewStatus string
-
-// const (
-// 	SecretPreviewNew     SecretPreviewStatus = "new"
-// 	SecretPreviewUpdated SecretPreviewStatus = "updated"
-// 	SecretPreviewRead    SecretPreviewStatus = "read"
-// )
-
-// Holds just preview secret information: metadata, date, id.
-//
-// Doesn't include any private user info
-// type SecretPreview struct {
-// 	ID        uint64
-// 	CreatedAt time.Time
-// 	UpdatedAt time.Time
-// 	Metadata  string
-// 	SType     string
-// 	Status    SecretPreviewStatus
-// }
-
-// type SecretPreviews []*SecretPreview

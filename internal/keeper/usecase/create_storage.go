@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"fmt"
 	"gophkeeper/internal/keeper/crypto"
 	"gophkeeper/internal/keeper/storage"
 )
@@ -13,10 +14,8 @@ func NewCreateStorageUsecase() *CreateLocalStoreUseCase {
 }
 
 func (uc CreateLocalStoreUseCase) Call(path string, password string, encrypter crypto.Encrypter) (*storage.FileStorage, error) {
-	var err error
-
 	if path == "" {
-		panic("empty path") // todo
+		return nil, fmt.Errorf("no path provided")
 	}
 
 	fs, err := storage.NewFileStorage(path, password, encrypter)

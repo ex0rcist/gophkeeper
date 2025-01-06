@@ -32,7 +32,7 @@ func New() *Config {
 
 	viper.SetDefault("verbose", false)
 	viper.SetDefault("log-level", "INFO")
-	viper.SetDefault("secret-key", "123456")
+	viper.SetDefault("secret-key", "123456") // TODO: remove default, add warning
 
 	viper.SetEnvPrefix("GOPH")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))

@@ -27,7 +27,6 @@ type Server struct {
 	log     *zap.SugaredLogger
 	deps    *dig.Container
 	storage storage.ServerStorage
-	// privateKey     security.PrivateKey
 
 	grpcServer *grpcbackend.GRPCServer
 }
@@ -56,12 +55,6 @@ func New(deps ServerDependencies) *Server {
 
 // Start all subservices
 func (s *Server) Start() error {
-
-	// privateKey, err := preparePrivateKey(config)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	s.grpcServer.Start()
 
 	// Graceful shutdown
@@ -120,22 +113,6 @@ func (s *Server) shutdown() {
 		s.log.Info("shutdown timeout exceeded")
 	}
 }
-
-// func preparePrivateKey(config *Config) (security.PrivateKey, error) {
-// 	var (
-// 		privateKey security.PrivateKey
-// 		err        error
-// 	)
-
-// 	if len(config.PrivateKeyPath) != 0 {
-// 		privateKey, err = security.NewPrivateKey(config.PrivateKeyPath)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 	}
-
-// 	return privateKey, err
-// }
 
 // Common interface for different subservices: http, grpc, profiling, etc
 type ServerService interface {

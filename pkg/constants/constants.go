@@ -12,10 +12,4 @@ var (
 
 	// Context key name for user_id storage
 	CtxUserIDKey CtxKey = "user_id"
-
-	// Default time format
-	TimeFormat = "2006-01-02 15:04"
-
-	// Chunk size for file uplaod and download
-	ChunkSize = 1024 * 1024 * 2
 )

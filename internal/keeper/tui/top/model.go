@@ -222,7 +222,6 @@ func (m Model) viewHeight() int {
 		vh -= tui.HelpWidgetHeight
 	}
 
-	// TODO: debug max(tui.MinContentHeight, vh)
 	return vh
 }
 
@@ -251,8 +250,7 @@ func (m Model) help() string {
 	var (
 		pairs []string
 		width int
-		// Subtract 2 to accommodate borders
-		rows = tui.HelpWidgetHeight - 2
+		rows  = tui.HelpWidgetHeight - 2 // -2 for border
 	)
 	for i := 0; i < len(bindings); i += rows {
 		var (

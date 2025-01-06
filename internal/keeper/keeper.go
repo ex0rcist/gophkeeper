@@ -26,8 +26,7 @@ type Keeper struct {
 	tuiApp *app.App
 	log    *zap.SugaredLogger
 
-	client      api.IApiClient
-	accessToken string // ???
+	client api.IApiClient
 }
 
 type KeeperDependencies struct {
@@ -79,7 +78,8 @@ func (k Keeper) shutdown() {
 	defer cancel()
 
 	go func() {
-		// shut down seervices here ...
+		// Shut down seervices here, if any
+		// TODO: notification service
 
 		close(stopped)
 	}()

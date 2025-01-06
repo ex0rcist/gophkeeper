@@ -47,7 +47,7 @@ func NewStorageCreateScreen() (*StorageCreateScreen, error) {
 	}
 
 	scr := &StorageCreateScreen{
-		encrypter:       crypto.NewKeeperEncrypter(), // todo: dependencies
+		encrypter:       crypto.NewKeeperEncrypter(),
 		createStorageUC: usecase.NewCreateStorageUsecase(),
 	}
 
@@ -99,7 +99,7 @@ func (s *StorageCreateScreen) Submit() tea.Cmd {
 	path := s.inputGroup.Inputs[createPath].Value()
 	password := s.inputGroup.Inputs[createPassword].Value()
 
-	// todo: validate inputs
+	// TODO: validate inputs
 
 	s.storage, err = s.createStorageUC.Call(path, password, s.encrypter)
 	if err != nil {

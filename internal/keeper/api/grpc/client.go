@@ -10,7 +10,6 @@ import (
 	"gophkeeper/internal/keeper/api/grpc/interceptor"
 	"gophkeeper/internal/keeper/config"
 	"gophkeeper/internal/keeper/entities"
-	"gophkeeper/pkg/constants"
 	"gophkeeper/pkg/convert"
 	"gophkeeper/pkg/models"
 	"log"
@@ -41,8 +40,7 @@ type GRPCClient struct {
 	notifyClient  pb.NotificationClient
 	accessToken   string
 	password      string // passw to encrypt payload
-	chunkSize     int
-	clientID      int32 // Unique ID to distinguish between multiple running clients for same user
+	clientID      int32  // Unique ID to distinguish between multiple running clients for same user
 	previews      sync.Map
 }
 
@@ -52,9 +50,8 @@ func NewGRPCClient(cfg *config.Config) (*GRPCClient, error) {
 	var opts []grpc.DialOption
 
 	newClient := GRPCClient{
-		config:    cfg,
-		chunkSize: constants.ChunkSize,
-		clientID:  int32(rand.IntN(math.MaxInt32)),
+		config:   cfg,
+		clientID: int32(rand.IntN(math.MaxInt32)),
 	}
 
 	// Unary interceptors

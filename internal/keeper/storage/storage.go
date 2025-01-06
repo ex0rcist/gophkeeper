@@ -5,13 +5,6 @@ import (
 	"gophkeeper/pkg/models"
 )
 
-// // Kinds of storage
-// const (
-// 	KindMemory   = "memory"
-// 	KindFile     = "file"
-// 	KindDatabase = "database"
-// )
-
 type Storage interface {
 	Get(ctx context.Context, id uint64) (*models.Secret, error)
 	GetAll(ctx context.Context) ([]*models.Secret, error)

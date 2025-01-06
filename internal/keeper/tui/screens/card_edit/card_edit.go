@@ -60,7 +60,7 @@ func NewCardEditScreen(secret *models.Secret, strg storage.Storage) *CardEditScr
 		if err != nil {
 			return tui.ReportError(err)
 		} else {
-			// todo: invalidate or update cache ?
+			// todo: invalidate or update cache
 			return tui.SetBodyPane(tui.StorageBrowseScreen, tui.WithStorage(m.storage))
 		}
 	}})
@@ -93,7 +93,6 @@ func (s *CardEditScreen) Update(msg tea.Msg) tea.Cmd {
 		cmds []tea.Cmd
 	)
 
-	// Handle input group. TODO: fix blink
 	ig, cmd := s.inputGroup.Update(msg)
 	s.inputGroup = ig.(components.InputGroup)
 

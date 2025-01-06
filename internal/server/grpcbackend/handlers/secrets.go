@@ -56,21 +56,7 @@ func (s *SecretsServer) SaveUserSecretV1(ctx context.Context, in *pb.SaveUserSec
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// // Send notifications
-	// clientID, err := extractClientID(ctx)
-	// if err == nil {
-	// 	if secret.ID > 0 {
-	// 		// Update notification
-	// 		err = s.notifyClients(userID, clientID, secret.ID, true)
-	// 	} else {
-	// 		// New secret notification
-	// 		err = s.notifyClients(userID, clientID, secretID, false)
-	// 	}
-
-	// 	if err != nil {
-	// 		s.log.Error("failed to notify clients: ", err)
-	// 	}
-	// }
+	// TODO: Send notifications
 
 	return &emptypb.Empty{}, nil
 }

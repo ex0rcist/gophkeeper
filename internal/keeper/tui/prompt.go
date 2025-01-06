@@ -12,12 +12,12 @@ import (
 
 // PromptMsg enables the prompt widget.
 type PromptMsg struct {
-	Prompt       string       // Prompt to display to the user.
+	Prompt       string       // Prompt to display to the user
 	Placeholder  string       // Set placeholder text in prompt
-	InitialValue string       // Set initial value for the user to edit.
-	Action       PromptAction // Action to carry out when key is pressed.
-	Key          key.Binding  // Key that when pressed triggers the action and closes the prompt.
-	Cancel       key.Binding  // Cancel is a key that when pressed skips the action and closes the prompt.
+	InitialValue string       // Set initial value for the user to edit
+	Action       PromptAction // Action to carry out when key is pressed
+	Key          key.Binding  // Key that when pressed triggers the action and closes the prompt
+	Cancel       key.Binding  // Cancel is a key that when pressed skips the action and closes the prompt
 	AnyCancel    bool         // If any key can cancel the prompt
 }
 

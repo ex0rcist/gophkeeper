@@ -9,7 +9,6 @@ import (
 	grpchandlers "gophkeeper/internal/server/grpcbackend/handlers"
 	"gophkeeper/internal/server/grpcbackend/interceptor"
 	"gophkeeper/pkg/proto/keeper/grpcapi"
-	"net"
 
 	"go.uber.org/dig"
 	"go.uber.org/zap"
@@ -19,9 +18,6 @@ import (
 )
 
 type Backend struct {
-	// privateKey    security.PrivateKey
-	trustedSubnet *net.IPNet
-
 	server *grpc.Server
 }
 
@@ -33,7 +29,7 @@ type BackendDependencies struct {
 	HealthServer  *grpchandlers.HealthServer
 	UsersServer   *grpchandlers.UsersServer
 	SecretsServer *grpchandlers.SecretsServer
-	// NotificationServer    Notificationerver
+	// TODO:  NotificationServer    Notificationerver
 }
 
 // Backend constructor
