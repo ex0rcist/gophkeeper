@@ -51,6 +51,10 @@ func (a App) Start() {
 
 	p := tea.NewProgram(a.topModel, tea.WithAltScreen())
 
+	log.Println("asdadsasdasdasdasdas111")
+	// Run notification monitor
+	go a.client.Notifications(p)
+
 	// Run tea program
 	go func() {
 		_, err := p.Run()

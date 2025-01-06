@@ -17,6 +17,7 @@ var (
 
 	ErrUserNotFound      = errors.New("user not found")
 	ErrUserAlreadyExists = errors.New("user already exists")
+	ErrNoSubscribers     = errors.New("no subscribers")
 )
 
 func ErrorUserAlreadyExists(login string) error {

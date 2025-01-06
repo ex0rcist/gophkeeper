@@ -105,7 +105,7 @@ func (s *UsersServer) authUser(userID int) (string, error) {
 	return token, nil
 }
 
-func extractClientID(ctx context.Context) (int32, error) {
+func extractClientID(ctx context.Context) (uint64, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return 0, errors.New("failed to get metadata")
@@ -123,5 +123,5 @@ func extractClientID(ctx context.Context) (int32, error) {
 		return 0, err
 	}
 
-	return int32(id), nil
+	return uint64(id), nil
 }

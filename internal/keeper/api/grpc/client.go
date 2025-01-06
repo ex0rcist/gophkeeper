@@ -40,7 +40,7 @@ type GRPCClient struct {
 	notifyClient  pb.NotificationClient
 	accessToken   string
 	password      string // passw to encrypt payload
-	clientID      int32  // Unique ID to distinguish between multiple running clients for same user
+	clientID      uint64 // Unique ID to distinguish between multiple running clients for same user
 	previews      sync.Map
 }
 
@@ -51,7 +51,7 @@ func NewGRPCClient(cfg *config.Config) (*GRPCClient, error) {
 
 	newClient := GRPCClient{
 		config:   cfg,
-		clientID: int32(rand.IntN(math.MaxInt32)),
+		clientID: uint64(rand.IntN(math.MaxInt32)),
 	}
 
 	// Unary interceptors
@@ -59,8 +59,14 @@ func NewGRPCClient(cfg *config.Config) (*GRPCClient, error) {
 		opts,
 		grpc.WithChainUnaryInterceptor(
 			interceptor.Timeout(DefaultClientTimeout),
-			interceptor.AddAuth(&newClient.accessToken, newClient.clientID),
+			interceptor.AddAuth(&newClient.accessToken, uint32(newClient.clientID)),
 		),
+	)
+
+	// Stream interceptor
+	opts = append(
+		opts,
+		grpc.WithStreamInterceptor(interceptor.AddAuthStream(&newClient.accessToken, newClient.clientID)),
 	)
 
 	// TLS

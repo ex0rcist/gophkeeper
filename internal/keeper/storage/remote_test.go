@@ -7,6 +7,7 @@ import (
 
 	"gophkeeper/pkg/models"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -61,6 +62,9 @@ func (m *MockApiClient) SetPassword(password string) {
 func (m *MockApiClient) GetPassword() string {
 	args := m.Called()
 	return args.String(0)
+}
+
+func (m *MockApiClient) Notifications(p *tea.Program) {
 }
 
 func TestRemoteStorage(t *testing.T) {

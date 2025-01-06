@@ -9,6 +9,7 @@ import (
 	"gophkeeper/pkg/convert"
 
 	"go.uber.org/dig"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -19,18 +20,24 @@ import (
 type SecretsServer struct {
 	pb.UnimplementedSecretsServer
 
-	secretsManager service.SecretsManager
+	logger             *zap.SugaredLogger
+	secretsManager     service.SecretsManager
+	notificationServer *NotificationServer
 }
 
 type SecretsServerDependencies struct {
 	dig.In
 
-	SecretsManager service.SecretsManager
+	Logger             *zap.SugaredLogger
+	SecretsManager     service.SecretsManager
+	NotificationServer *NotificationServer
 }
 
 func NewSecretsServer(deps SecretsServerDependencies) *SecretsServer {
 	return &SecretsServer{
-		secretsManager: deps.SecretsManager,
+		logger:             deps.Logger,
+		notificationServer: deps.NotificationServer,
+		secretsManager:     deps.SecretsManager,
 	}
 }
 
@@ -56,7 +63,16 @@ func (s *SecretsServer) SaveUserSecretV1(ctx context.Context, in *pb.SaveUserSec
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// TODO: Send notifications
+	// Send notifications
+	clientID, err := extractClientID(ctx)
+	if err == nil {
+		isUpdated := secret.ID > 0
+		err = s.notificationServer.notifyClients(userID, clientID, secret.ID, isUpdated)
+
+		if err != nil {
+			s.logger.Error("failed to notify clients: ", err)
+		}
+	}
 
 	return &emptypb.Empty{}, nil
 }

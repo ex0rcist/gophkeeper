@@ -4,6 +4,8 @@ package api
 import (
 	"context"
 	"gophkeeper/pkg/models"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 //go:generate mockgen -source client.go -destination mocks/mock_client.go -package api
@@ -21,4 +23,6 @@ type IApiClient interface {
 
 	SetPassword(password string)
 	GetPassword() string
+
+	Notifications(p *tea.Program)
 }

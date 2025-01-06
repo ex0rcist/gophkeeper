@@ -24,12 +24,12 @@ type Backend struct {
 type BackendDependencies struct {
 	dig.In
 
-	Logger        *zap.SugaredLogger
-	Config        *config.Config
-	HealthServer  *grpchandlers.HealthServer
-	UsersServer   *grpchandlers.UsersServer
-	SecretsServer *grpchandlers.SecretsServer
-	// TODO:  NotificationServer    Notificationerver
+	Logger             *zap.SugaredLogger
+	Config             *config.Config
+	HealthServer       *grpchandlers.HealthServer
+	UsersServer        *grpchandlers.UsersServer
+	SecretsServer      *grpchandlers.SecretsServer
+	NotificationServer *grpchandlers.NotificationServer
 }
 
 // Backend constructor
@@ -53,12 +53,21 @@ func NewBackend(deps BackendDependencies) (*Backend, error) {
 		grpcOpts = append(grpcOpts, grpc.Creds(tlsCreds))
 	}
 
+	// Stream interceptor
+	grpcOpts = append(
+		grpcOpts,
+		grpc.StreamInterceptor(
+			interceptor.StreamAuthentication([]byte(deps.Config.SecretKey)),
+		),
+	)
+
 	grpcServer := grpc.NewServer(grpcOpts...)
 
 	// Register servers
 	grpcapi.RegisterHealthServer(grpcServer, deps.HealthServer)
 	grpcapi.RegisterUsersServer(grpcServer, deps.UsersServer)
 	grpcapi.RegisterSecretsServer(grpcServer, deps.SecretsServer)
+	grpcapi.RegisterNotificationServer(grpcServer, deps.NotificationServer)
 
 	backend := &Backend{server: grpcServer}
 

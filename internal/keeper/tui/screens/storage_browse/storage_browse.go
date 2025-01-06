@@ -59,6 +59,8 @@ func (s *StorageBrowseScreen) Update(msg tea.Msg) tea.Cmd {
 	)
 
 	switch msg := msg.(type) {
+	case tui.ReloadSecretList:
+		s.updateRows()
 	case savePathMsg: // msg from prompt for blob-secret copy-hotkey
 		err := os.WriteFile(msg.path, msg.secret.Blob.FileBytes, 0644)
 		if err != nil {

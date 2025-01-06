@@ -71,7 +71,7 @@ func buildDepContainer(cfg *config.Config) *dig.Container {
 	_ = container.Provide(grpchandlers.NewUsersServer)
 	_ = container.Provide(grpchandlers.NewHealthServer)
 	_ = container.Provide(grpchandlers.NewSecretsServer)
-	// TODO: notification server
+	_ = container.Provide(grpchandlers.NewNotificationServer)
 
 	// services
 	_ = container.Provide(service.NewHealthService, dig.As(new(service.HealthManager)))

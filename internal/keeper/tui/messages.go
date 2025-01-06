@@ -9,6 +9,7 @@ import (
 )
 
 type NavigationCallback func(args ...any) tea.Cmd
+type ReloadSecretList struct{}
 
 // NavigationMsg is an instruction to navigate to a page
 type NavigationMsg struct {
